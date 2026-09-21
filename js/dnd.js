@@ -1,8 +1,17 @@
-/* Dragging, for both plan rows and whole day sections.
+/* Dragging, for both plan rows and whole day columns.
  *
- * The rows that get pushed out of the way animate with FLIP: measure where the
- * neighbours are, move the node, then play them from their old position back to
- * the new one. Measuring the *rendered* rect (transforms included) means an
+ * The board lays days out left to right, so placement is two-dimensional:
+ * which column the pointer is over (by x), then which slot inside it (by y).
+ * Day columns reorder purely by x.
+ *
+ * Scrolling is nested — a horizontal board holding vertically scrolling
+ * columns — so autoScroll nudges the board sideways and whichever plan list
+ * is under the pointer downwards, each only when the pointer is near that
+ * element's own edge.
+ *
+ * Rows pushed out of the way animate with FLIP: measure where the neighbours
+ * are, move the node, then play them from their old position back to the new
+ * one. Measuring the *rendered* rect (transforms included) means an
  * interrupted animation retargets smoothly instead of snapping.
  */
 (function (TT) {
@@ -11,22 +20,29 @@
   const dnd = TT.dnd = {};
   let drag = null;
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const EDGE = 90;       // how close to an edge before it scrolls
+  const SPEED = 6;
 
   // ---------- FLIP ----------
   function readRects(nodes) {
     const m = new Map();
-    nodes.forEach(function (n) { m.set(n, n.getBoundingClientRect().top); });
+    nodes.forEach(function (n) {
+      const b = n.getBoundingClientRect();
+      m.set(n, { top: b.top, left: b.left });
+    });
     return m;
   }
 
   function playRects(m) {
     if (reduceMotion) return;
     const moved = [];
-    m.forEach(function (oldTop, n) {
-      const dy = oldTop - n.getBoundingClientRect().top;
-      if (!dy) return;
+    m.forEach(function (old, n) {
+      const b = n.getBoundingClientRect();
+      const dy = old.top - b.top;
+      const dx = old.left - b.left;
+      if (!dx && !dy) return;
       n.classList.remove("flip-move");
-      n.style.transform = "translateY(" + dy + "px)";
+      n.style.transform = "translate(" + dx + "px," + dy + "px)";
       moved.push(n);
     });
     if (!moved.length) return;
@@ -45,6 +61,12 @@
       n.style.transform = "";
     });
   }
+
+  const board = function () { return TT.view.timelineEl; };
+  const columns = function () {
+    return Array.prototype.slice.call(board().children)
+      .filter(function (n) { return n.classList.contains("day"); });
+  };
 
   // ---------- drag lifecycle ----------
   /** @param kind "plan" | "day" */
@@ -65,7 +87,11 @@
     ghost.classList.remove("flip-move");
     ghost.style.transform = "";
     if (kind === "day") ghost.classList.add("day-ghost");
-    Object.assign(ghost.style, { width: rect.width + "px", left: rect.left + "px", top: rect.top + "px" });
+    Object.assign(ghost.style, {
+      width: rect.width + "px",
+      height: kind === "day" ? Math.min(rect.height, 420) + "px" : "auto",
+      left: rect.left + "px", top: rect.top + "px"
+    });
     document.body.appendChild(ghost);
 
     rowEl.classList.add("drag-placeholder");
@@ -73,11 +99,15 @@
 
     let hint = null;
     if (kind === "day") {
-      hint = TT.el("div", "drop-hint", "Dates stay in order — this day's plans move into the slot you drop it on");
+      hint = TT.el("div", "drop-hint", TT.t("drag.dayHint"));
       document.body.appendChild(hint);
     }
 
-    drag = { kind: kind, rowEl: rowEl, ghost: ghost, hint: hint, offsetY: e.clientY - rect.top, y: e.clientY, raf: 0 };
+    drag = {
+      kind: kind, rowEl: rowEl, ghost: ghost, hint: hint,
+      offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+      x: e.clientX, y: e.clientY, raf: 0
+    };
     window.addEventListener("pointermove", onMove, { passive: false });
     window.addEventListener("pointerup", end);
     window.addEventListener("pointercancel", end);
@@ -87,27 +117,41 @@
   function onMove(e) {
     if (!drag) return;
     e.preventDefault();
+    drag.x = e.clientX;
     drag.y = e.clientY;
+    drag.ghost.style.left = (e.clientX - drag.offsetX) + "px";
     drag.ghost.style.top = (e.clientY - drag.offsetY) + "px";
-    placeAt(e.clientY);
+    placeAt(e.clientX, e.clientY);
   }
 
-  function placeAt(y) {
+  function placeAt(x, y) {
     if (!drag) return;
-    return drag.kind === "day" ? placeDayAt(y) : placePlanAt(y);
+    return drag.kind === "day" ? placeDayAt(x) : placePlanAt(x, y);
   }
 
-  function placePlanAt(y) {
-    const timelineEl = TT.view.timelineEl;
-    const tRect = timelineEl.getBoundingClientRect();
-    const x = tRect.left + Math.min(tRect.width / 2, 200);
-    const target = document.elementFromPoint(x, y);
-    if (!target) return;
+  /** Which plan list is under the pointer, ignoring the ghost. */
+  function listUnder(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return null;
+    const list = el.closest(".plans");
+    if (list) return list;
+    const col = el.closest(".day");
+    return col ? col.querySelector(".plans") : null;
+  }
 
-    let list = target.closest(".plans");
+  function placePlanAt(x, y) {
+    let list = listUnder(x, y);
     if (!list) {
-      const day = target.closest(".day");
-      if (day) list = day.querySelector(".plans");
+      // past the end of a column, or over its header: fall back to nearest column by x
+      const cols = columns();
+      let best = null, bestDist = Infinity;
+      for (let i = 0; i < cols.length; i++) {
+        const b = cols[i].getBoundingClientRect();
+        const dist = x < b.left ? b.left - x : x > b.right ? x - b.right : 0;
+        if (dist < bestDist) { bestDist = dist; best = cols[i]; }
+      }
+      if (!best || bestDist > 120) return;
+      list = best.querySelector(".plans");
     }
     if (!list) return;
 
@@ -121,7 +165,7 @@
     if (drag.rowEl.parentNode === list && drag.rowEl.nextElementSibling === before) return;
 
     const oldList = drag.rowEl.parentNode;
-    const neighbours = Array.prototype.slice.call(timelineEl.querySelectorAll(".plan-row"))
+    const neighbours = Array.prototype.slice.call(board().querySelectorAll(".plan-row"))
       .filter(function (r) { return r !== drag.rowEl; });
     const rects = readRects(neighbours);
 
@@ -130,29 +174,49 @@
     playRects(rects);
   }
 
-  function placeDayAt(y) {
-    const timelineEl = TT.view.timelineEl;
-    const others = Array.prototype.slice.call(timelineEl.children)
-      .filter(function (d) { return d.classList.contains("day") && d !== drag.rowEl; });
+  function placeDayAt(x) {
+    const others = columns().filter(function (d) { return d !== drag.rowEl; });
     let before = null;
     for (let i = 0; i < others.length; i++) {
       const b = others[i].getBoundingClientRect();
-      if (y < b.top + b.height / 2) { before = others[i]; break; }
+      if (x < b.left + b.width / 2) { before = others[i]; break; }
     }
     if (drag.rowEl.nextElementSibling === before) return;
 
     const rects = readRects(others);
-    if (before) timelineEl.insertBefore(drag.rowEl, before); else timelineEl.appendChild(drag.rowEl);
+    if (before) board().insertBefore(drag.rowEl, before); else board().appendChild(drag.rowEl);
     playRects(rects);
   }
 
+  /** Board scrolls sideways; the hovered column scrolls down. */
   function autoScroll() {
     if (!drag) return;
-    const edge = 80, h = window.innerHeight;
-    let dy = 0;
-    if (drag.y < edge) dy = -Math.ceil((edge - drag.y) / 5);
-    else if (drag.y > h - edge) dy = Math.ceil((drag.y - (h - edge)) / 5);
-    if (dy) { window.scrollBy(0, dy); placeAt(drag.y); }
+    const b = board();
+    const rect = b.getBoundingClientRect();
+
+    let dx = 0;
+    if (drag.x < rect.left + EDGE) dx = -Math.ceil((rect.left + EDGE - drag.x) / SPEED);
+    else if (drag.x > rect.right - EDGE) dx = Math.ceil((drag.x - (rect.right - EDGE)) / SPEED);
+    if (dx) b.scrollLeft += dx;
+
+    if (drag.kind === "plan") {
+      const list = listUnder(drag.x, drag.y);
+      if (list && list.scrollHeight > list.clientHeight) {
+        const lb = list.getBoundingClientRect();
+        let dy = 0;
+        if (drag.y < lb.top + 40) dy = -Math.ceil((lb.top + 40 - drag.y) / SPEED);
+        else if (drag.y > lb.bottom - 40) dy = Math.ceil((drag.y - (lb.bottom - 40)) / SPEED);
+        if (dy) list.scrollTop += dy;
+      }
+    } else if (b.classList.contains("as-calendar")) {
+      const cb = b.getBoundingClientRect();
+      let dy = 0;
+      if (drag.y < cb.top + EDGE) dy = -Math.ceil((cb.top + EDGE - drag.y) / SPEED);
+      else if (drag.y > cb.bottom - EDGE) dy = Math.ceil((drag.y - (cb.bottom - EDGE)) / SPEED);
+      if (dy) b.scrollTop += dy;
+    }
+
+    if (dx) placeAt(drag.x, drag.y);
     drag.raf = requestAnimationFrame(autoScroll);
   }
 
@@ -169,13 +233,12 @@
     if (drag.hint) drag.hint.remove();
     drag.rowEl.classList.remove("drag-placeholder");
     document.body.classList.remove("dragging");
-    clearFlip(TT.view.timelineEl);
+    clearFlip(board());
     drag = null;
 
     const store = TT.store;
     if (kind === "day") {
-      const order = Array.prototype.slice.call(TT.view.timelineEl.children)
-        .filter(function (n) { return n.classList.contains("day"); })
+      const order = columns()
         .map(function (n) { return store.dayOf(n.dataset.dayId); })
         .filter(Boolean);
       const moved = store.dayOf(movedId);
@@ -227,7 +290,7 @@
     TT.store.save();
     TT.view.render();
     const h = document.querySelector('[data-plan-id="' + planId + '"] .grip');
-    if (h) h.focus();
+    if (h) { h.focus(); scrollColumnIntoView(h); }
   };
 
   dnd.moveDayByKey = function (dayId, dir) {
@@ -245,6 +308,12 @@
     const moved = store.dayOf(dayId);
     if (changed && moved) TT.toast(TT.t("toast.movedToShort", { date: TT.shortDate(moved.date) }));
     const g = document.querySelector('[data-day-id="' + dayId + '"] .day-grip');
-    if (g) g.focus();
+    if (g) { g.focus(); scrollColumnIntoView(g); }
   };
+
+  function scrollColumnIntoView(el) {
+    const col = el.closest(".day");
+    if (col) col.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }
+  dnd.scrollColumnIntoView = scrollColumnIntoView;
 })(window.TT);

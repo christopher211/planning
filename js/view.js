@@ -49,6 +49,7 @@
 
     if (store.view() === "calendar") {
       view.timelineEl.classList.add("as-calendar");
+      document.getElementById("boardHint").textContent = "";
       TT.calendar.render(view.timelineEl, function (dayId) {
         store.setView("timeline");
         const d = store.dayOf(dayId);
@@ -63,6 +64,7 @@
       return;
     }
     view.timelineEl.classList.remove("as-calendar");
+    document.getElementById("boardHint").textContent = store.days().length > 1 ? TT.t("board.hint") : "";
 
     if (store.days().length === 0) {
       const empty = TT.el("div", "timeline-empty");
@@ -106,9 +108,9 @@
     if (!dayEl) return;
     const day = store.dayOf(dayEl.dataset.dayId);
     if (!day) return;
-    const main = dayEl.querySelector(".day-main");
-    main.querySelectorAll(".chip").forEach(function (c) { c.remove(); });
-    dayChips(day).forEach(function (c) { main.appendChild(c); });
+    const chips = dayEl.querySelector(".day-chips");
+    chips.innerHTML = "";
+    dayChips(day).forEach(function (c) { chips.appendChild(c); });
   }
 
   function renderDay(day) {
@@ -190,7 +192,6 @@
       });
     }
 
-    dayChips(day).forEach(function (c) { main.appendChild(c); });
     head.appendChild(main);
 
     const tools = TT.el("div", "day-tools");
@@ -222,10 +223,14 @@
     head.appendChild(tools);
     content.appendChild(head);
 
+    const chips = TT.el("div", "day-chips");
+    dayChips(day).forEach(function (c) { chips.appendChild(c); });
+    content.appendChild(chips);
+
     if (day.collapsed) {
       const summary = TT.el("button", "day-summary");
       summary.type = "button";
-      summary.textContent = TT.t("day.planCount", { n: day.plans.length });
+      summary.textContent = TT.t(day.plans.length === 1 ? "day.planCount.one" : "day.planCount", { n: day.plans.length });
       summary.title = TT.t("day.expand");
       summary.addEventListener("click", function () {
         day.collapsed = false;

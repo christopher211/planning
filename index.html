@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+
 <div class="banner hidden" id="banner">
   <span class="banner-text" id="bannerText"></span>
   <span class="banner-actions">
@@ -21,34 +22,51 @@
   </span>
 </div>
 
-<div class="wrap">
-  <header>
-    <div class="title-block">
-      <h1><span id="title1">Trip</span> <em id="title2">Timeline</em></h1>
-      <button class="trips-btn" id="tripsBtn" type="button">
-        <span class="trip-star hidden">★</span><span class="trip-name"></span><span class="trip-caret">▾</span>
-      </button>
-      <p class="tagline" id="tagline"></p>
+<!-- ---------- sticky header ---------- -->
+<header class="topbar" id="topbar">
+  <div class="topbar-left">
+    <h1><span id="title1">Trip</span> <em id="title2">Timeline</em></h1>
+    <button class="trips-btn" id="tripsBtn" type="button">
+      <span class="trip-star hidden">★</span><span class="trip-name"></span><span class="trip-caret">▾</span>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <div class="seg" id="viewToggle" role="group">
+      <button type="button" data-view="timeline"></button>
+      <button type="button" data-view="calendar"></button>
     </div>
-    <div class="header-actions">
+    <button class="icon-toggle" id="sidebarBtn" type="button" aria-expanded="true">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <rect x="1.6" y="2.6" width="12.8" height="10.8" rx="2"/><path d="M10 2.6v10.8"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+  <!-- ---------- board ---------- -->
+  <main class="board-wrap" id="boardWrap">
+    <div class="board-bar">
+      <button class="text-btn" id="collapseBtn" type="button"></button>
+      <button class="text-btn" id="sortDateBtn" type="button"></button>
+      <span class="board-hint" id="boardHint"></span>
+    </div>
+    <div class="board" id="timeline"></div>
+  </main>
+
+  <!-- ---------- sidebar ---------- -->
+  <aside class="sidebar" id="sidebar">
+    <div class="side-group">
+      <p class="side-title" id="sideActions"></p>
       <button class="open-btn" id="shareBtn" type="button"></button>
       <button class="open-btn" id="icsBtn" type="button"></button>
       <button class="open-btn" id="openBtn" type="button"></button>
       <input class="file-input" id="fileInput" type="file" accept="application/pdf,.pdf" tabindex="-1" aria-hidden="true">
-      <button class="reset-btn" id="resetBtn" type="button"></button>
       <button class="export-btn" id="exportBtn" type="button"></button>
     </div>
-  </header>
 
-  <div class="toolbar">
-    <ul class="legend" id="legend"></ul>
-    <div class="toolbar-actions">
-      <button class="text-btn" id="sortDateBtn" type="button"></button>
-      <button class="text-btn" id="collapseBtn" type="button"></button>
-      <div class="seg" id="viewToggle" role="group">
-        <button type="button" data-view="timeline"></button>
-        <button type="button" data-view="calendar"></button>
-      </div>
+    <div class="side-group">
+      <p class="side-title" id="sideFormat"></p>
       <div class="seg" id="fmtToggle" role="group">
         <button type="button" data-fmt="dmy">DD/MM</button>
         <button type="button" data-fmt="mdy">MM/DD</button>
@@ -58,9 +76,17 @@
         <button type="button" data-lang="vi">VI</button>
       </div>
     </div>
-  </div>
 
-  <div class="timeline" id="timeline"></div>
+    <div class="side-group">
+      <p class="side-title" id="sideLegend"></p>
+      <ul class="legend" id="legend"></ul>
+    </div>
+
+    <div class="side-group side-foot">
+      <button class="reset-btn" id="resetBtn" type="button"></button>
+    </div>
+  </aside>
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
 </div>
 
 <!-- floating add-day control -->

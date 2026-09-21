@@ -26,7 +26,6 @@
     document.documentElement.lang = TT.lang();
     document.getElementById("title1").textContent = TT.t("title.1");
     document.getElementById("title2").textContent = TT.t("title.2");
-    document.getElementById("tagline").textContent = TT.t("tagline");
     document.getElementById("shareBtn").textContent = TT.t("btn.share");
     const icsBtn = document.getElementById("icsBtn");
     icsBtn.textContent = TT.t("btn.calendarExport");
@@ -50,6 +49,11 @@
     document.getElementById("shareCopy").textContent = TT.t("share.copy");
     document.getElementById("shareClose").textContent = TT.t("btn.close");
 
+    document.getElementById("sideActions").textContent = TT.t("side.actions");
+    document.getElementById("sideFormat").textContent = TT.t("side.format");
+    document.getElementById("sideLegend").textContent = TT.t("side.legend");
+    document.getElementById("sidebarBtn").title = TT.t("side.toggle");
+    document.getElementById("sidebarBtn").setAttribute("aria-label", TT.t("side.toggle"));
     document.getElementById("tripsTitle").textContent = TT.t("trip.title");
     document.getElementById("tripsClose").textContent = TT.t("btn.close");
     document.getElementById("tripNew").textContent = TT.t("trip.new");
@@ -183,6 +187,29 @@
     store.setLang(btn.dataset.lang);
     redraw();
   });
+
+  // ---------- sidebar ----------
+  const sidebarBtn = document.getElementById("sidebarBtn");
+  const scrim = document.getElementById("sidebarScrim");
+  const NARROW = function () { return window.matchMedia("(max-width: 720px)").matches; };
+
+  function setSidebar(open) {
+    document.body.classList.toggle("sidebar-closed", !open);
+    sidebarBtn.setAttribute("aria-expanded", String(open));
+    try { localStorage.setItem("tt-sidebar", open ? "1" : "0"); } catch (e) { /* private mode */ }
+  }
+  sidebarBtn.addEventListener("click", function () {
+    setSidebar(document.body.classList.contains("sidebar-closed"));
+  });
+  scrim.addEventListener("click", function () { setSidebar(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && NARROW() && !document.body.classList.contains("sidebar-closed")) setSidebar(false);
+  });
+  (function initSidebar() {
+    let saved = null;
+    try { saved = localStorage.getItem("tt-sidebar"); } catch (e) { /* private mode */ }
+    setSidebar(saved == null ? !NARROW() : saved === "1");
+  })();
 
   // ---------- view, collapse, trips, calendar file ----------
   viewToggle.addEventListener("click", function (e) {
