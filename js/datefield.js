@@ -61,12 +61,12 @@
     input.autocomplete = "off";
     input.spellcheck = false;
     input.placeholder = PLACEHOLDER[fmt];
-    input.setAttribute("aria-label", "Date, " + PLACEHOLDER[fmt]);
+    input.setAttribute("aria-label", TT.t("date.label", { fmt: PLACEHOLDER[fmt] }));
 
     const cal = TT.el("button", "df-cal");
     cal.type = "button";
-    cal.title = "Pick from a calendar";
-    cal.setAttribute("aria-label", "Pick from a calendar");
+    cal.title = TT.t("date.pickCalendar");
+    cal.setAttribute("aria-label", TT.t("date.pickCalendar"));
     cal.innerHTML = TT.ICON.calendar;
 
     const native = TT.el("input", "df-native");
@@ -164,7 +164,7 @@
 
     function flagInvalid(msg) {
       root.classList.add("invalid");
-      TT.toast(msg || ("That isn't a real date — expected " + PLACEHOLDER[fmt] + "."), true);
+      TT.toast(msg || TT.t("date.invalid", { fmt: PLACEHOLDER[fmt] }), true);
     }
 
     function commit() {

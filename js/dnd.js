@@ -183,7 +183,7 @@
       store.save();
       TT.view.render();
       if (changed && moved) {
-        TT.toast("Moved to " + TT.shortDate(moved.date) + " — everything else shifted to keep dates in order.");
+        TT.toast(TT.t("toast.movedTo", { date: TT.shortDate(moved.date) }));
       }
       return;
     }
@@ -243,7 +243,7 @@
     TT.view.render();
 
     const moved = store.dayOf(dayId);
-    if (changed && moved) TT.toast("Moved to " + TT.shortDate(moved.date) + " — dates stay in order.");
+    if (changed && moved) TT.toast(TT.t("toast.movedToShort", { date: TT.shortDate(moved.date) }));
     const g = document.querySelector('[data-day-id="' + dayId + '"] .day-grip');
     if (g) g.focus();
   };

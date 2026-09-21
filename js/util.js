@@ -27,17 +27,14 @@ window.TT = window.TT || {};
 
   // priority flags, in the order the flag button cycles through them
   TT.PRIORITIES = ["normal", "must", "optional"];
-  TT.PRI_META = {
-    normal:   { label: "unflagged", blurb: "no flag — an ordinary plan",
-                hint: "Unflagged — click to mark as must-do",
-                aria: "Priority: none. Click to flag as must-do." },
-    must:     { label: "must do", blurb: "must do — don't miss it",
-                hint: "Must do — click to mark as if-time",
-                aria: "Priority: must do. Click to mark as if-time." },
-    optional: { label: "if time", blurb: "if time — safe to skip when the day runs long",
-                hint: "If time (skippable) — click to clear the flag",
-                aria: "Priority: if time. Click to clear the flag." }
+  TT.priMeta = function (key) {
+    return {
+      blurb: TT.t("pri." + key + ".blurb"),
+      hint: TT.t("pri." + key + ".hint"),
+      aria: TT.t("pri." + key + ".aria")
+    };
   };
+
   TT.PRI_ICON = {
     normal:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.9l1.85 3.75 4.15.6-3 2.93.71 4.13L8 11.35l-3.71 1.96.71-4.13-3-2.93 4.15-.6z"/></svg>',
     must:     '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.9l1.85 3.75 4.15.6-3 2.93.71 4.13L8 11.35l-3.71 1.96.71-4.13-3-2.93 4.15-.6z"/></svg>',
@@ -58,15 +55,22 @@ window.TT = window.TT || {};
     return new Date(year, month, 0).getDate();
   };
   TT.shortDate = function (iso) {
-    return iso ? TT.parseLocalDate(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "no date";
+    if (!iso) return TT.t("export.noDate");
+    return TT.parseLocalDate(iso).toLocaleDateString(TT.locale(), { month: "short", day: "numeric" });
   };
   TT.longDate = function (iso) {
-    return iso ? TT.parseLocalDate(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "No date";
+    if (!iso) return TT.t("export.noDate");
+    return TT.parseLocalDate(iso).toLocaleDateString(TT.locale(), { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  };
+  TT.headingDate = function (iso) {
+    return TT.parseLocalDate(iso).toLocaleDateString(TT.locale(), { weekday: "short", month: "short", day: "numeric" });
   };
   TT.formatTime = function (t) {
     if (!t) return "";
     const parts = t.split(":").map(Number);
-    return new Date(2000, 0, 1, parts[0], parts[1]).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    // Vietnamese reads 24h; en-US keeps am/pm
+    return new Date(2000, 0, 1, parts[0], parts[1])
+      .toLocaleTimeString(TT.locale(), { hour: "2-digit", minute: "2-digit", hour12: TT.lang() === "en" });
   };
 
   // ---------- auto-growing textareas ----------

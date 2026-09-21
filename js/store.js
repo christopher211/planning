@@ -20,25 +20,28 @@
       };
     },
 
+    /** First visit: today and tomorrow, two blank slots each. */
     defaultState: function () {
-      const p = Store.newPlan;
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
       return {
         updatedAt: 0,
-        settings: { dateFormat: "mdy" },
-        days: [
-          { id: TT.uid(), date: "2026-12-04", plans: [p("Fly MSP → Seattle (Alaska 387)", "07:00", "must"), p("Fly Seattle → Seoul (Alaska 171)", "12:40", "must")] },
-          { id: TT.uid(), date: "2026-12-05", plans: [p("Fly Seoul → Ho Chi Minh City (Asiana OZ735)", "19:25", "must"), p("Land at Tan Son Nhat", "22:50", "must")] },
-          { id: TT.uid(), date: "2026-12-25", plans: [p("Fly SGN → Seoul (Delta 7920)", "08:00", "must"), p("Fly Seoul → Minneapolis (Delta 170)", "20:35", "must")] }
-        ]
+        settings: { dateFormat: "dmy", lang: "en" },
+        days: [today, tomorrow].map(function (d) {
+          return { id: TT.uid(), date: TT.toISO(d), plans: [Store.newPlan(), Store.newPlan()] };
+        })
       };
     },
 
     normalize: function (obj) {
       if (!obj || !Array.isArray(obj.days)) return null;
-      const fmt = obj.settings && obj.settings.dateFormat === "dmy" ? "dmy" : "mdy";
+      const saved = obj.settings || {};
+      const fmt = saved.dateFormat === "mdy" ? "mdy" : "dmy";   // DD/MM is the default
+      const lang = saved.lang === "vi" ? "vi" : "en";
       const data = {
         updatedAt: Number(obj.updatedAt) || 0,
-        settings: { dateFormat: fmt },
+        settings: { dateFormat: fmt, lang: lang },
         days: obj.days.map(function (d) {
           return {
             id: d.id || TT.uid(),
@@ -66,12 +69,16 @@
       return a.date.localeCompare(b.date);
     },
 
+    // while viewing a shared link nothing is written to this browser's storage
+    ephemeral: false,
+
     load: function () {
       try { return Store.normalize(JSON.parse(localStorage.getItem(KEY))); }
       catch (e) { return null; }
     },
     save: function () {
       Store.state.updatedAt = Date.now();
+      if (Store.ephemeral) return;
       try { localStorage.setItem(KEY, JSON.stringify(Store.state)); }
       catch (e) { console.error(e); }
     },
@@ -130,7 +137,13 @@
     // ---------- settings ----------
     dateFormat: function () { return Store.state.settings.dateFormat; },
     setDateFormat: function (fmt) {
-      Store.state.settings.dateFormat = fmt === "dmy" ? "dmy" : "mdy";
+      Store.state.settings.dateFormat = fmt === "mdy" ? "mdy" : "dmy";
+      Store.save();
+    },
+
+    lang: function () { return Store.state.settings.lang; },
+    setLang: function (lang) {
+      Store.state.settings.lang = lang === "vi" ? "vi" : "en";
       Store.save();
     }
   };

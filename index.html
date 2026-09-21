@@ -13,37 +13,70 @@
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+<div class="banner hidden" id="banner">
+  <span class="banner-text" id="bannerText"></span>
+  <span class="banner-actions">
+    <button class="banner-btn" id="bannerSave" type="button"></button>
+    <button class="banner-btn ghost" id="bannerLeave" type="button"></button>
+  </span>
+</div>
+
 <div class="wrap">
   <header>
     <div class="title-block">
-      <h1>Trip <em>Timeline</em></h1>
-      <p class="tagline">Drag a day to reshuffle it — dates always stay in trip order. Flag what's a must and what can slip.</p>
+      <h1><span id="title1">Trip</span> <em id="title2">Timeline</em></h1>
+      <p class="tagline" id="tagline"></p>
     </div>
     <div class="header-actions">
-      <button class="open-btn" id="openBtn" type="button">Open PDF</button>
+      <button class="open-btn" id="shareBtn" type="button"></button>
+      <button class="open-btn" id="openBtn" type="button"></button>
       <input class="file-input" id="fileInput" type="file" accept="application/pdf,.pdf" tabindex="-1" aria-hidden="true">
-      <button class="reset-btn" id="resetBtn" type="button">clear all</button>
-      <button class="export-btn" id="exportBtn" type="button">Export PDF</button>
+      <button class="reset-btn" id="resetBtn" type="button"></button>
+      <button class="export-btn" id="exportBtn" type="button"></button>
     </div>
   </header>
 
   <div class="toolbar">
     <ul class="legend" id="legend"></ul>
     <div class="toolbar-actions">
-      <button class="text-btn" id="sortDateBtn" type="button"
-              title="Put the day sections back in date order and each day's plans in time order">sort by date</button>
-      <div class="seg" id="fmtToggle" role="group" aria-label="Date entry format">
-        <button type="button" data-fmt="mdy" title="Type dates as month / day / year">MM/DD</button>
-        <button type="button" data-fmt="dmy" title="Type dates as day / month / year">DD/MM</button>
+      <button class="text-btn" id="sortDateBtn" type="button"></button>
+      <div class="seg" id="fmtToggle" role="group">
+        <button type="button" data-fmt="dmy">DD/MM</button>
+        <button type="button" data-fmt="mdy">MM/DD</button>
+      </div>
+      <div class="seg" id="langToggle" role="group">
+        <button type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="vi">VI</button>
       </div>
     </div>
   </div>
 
   <div class="timeline" id="timeline"></div>
+</div>
 
-  <div class="add-day-row">
-    <div class="add-day-rail"><span class="dot-ghost"></span></div>
-    <div id="addDayArea"></div>
+<!-- floating add-day control -->
+<div class="fab-wrap" id="fabWrap">
+  <div class="fab-panel hidden" id="fabPanel"></div>
+  <button class="fab" id="addDayFab" type="button" aria-expanded="false">
+    <span class="fab-plus">+</span><span class="fab-label"></span>
+  </button>
+</div>
+
+<!-- share sheet -->
+<div class="modal-backdrop hidden" id="shareModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <h2 id="shareTitle"></h2>
+    <p class="modal-body" id="shareBody"></p>
+    <div class="share-modes" id="shareModes">
+      <label><input type="radio" name="shareMode" value="view" checked><span id="shareModeView"></span></label>
+      <label><input type="radio" name="shareMode" value="edit"><span id="shareModeEdit"></span></label>
+    </div>
+    <input class="share-link" id="shareLink" type="text" readonly>
+    <p class="modal-note" id="shareNote"></p>
+    <div class="modal-actions">
+      <button class="cancel-btn" id="shareClose" type="button"></button>
+      <button class="confirm-btn" id="shareCopy" type="button"></button>
+    </div>
   </div>
 </div>
 
@@ -52,11 +85,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- plain scripts, loaded in dependency order, so the page also works opened straight from disk -->
 <script src="js/util.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/store.js"></script>
 <script src="js/datefield.js"></script>
 <script src="js/dnd.js"></script>
 <script src="js/view.js"></script>
 <script src="js/pdf.js"></script>
+<script src="js/share.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

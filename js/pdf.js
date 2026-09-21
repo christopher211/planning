@@ -26,19 +26,18 @@
   // ---------- the printable document ----------
   function buildExportNode() {
     const doc = TT.el("div", "export-doc");
-    doc.appendChild(TT.el("h1", null, "Trip Timeline"));
-    doc.appendChild(TT.el("p", "export-sub", "Exported " +
-      new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })));
+    doc.appendChild(TT.el("h1", null, TT.t("export.title")));
+    doc.appendChild(TT.el("p", "export-sub", TT.t("export.on", {
+      date: new Date().toLocaleDateString(TT.locale(), { year: "numeric", month: "long", day: "numeric" })
+    })));
 
     const days = store.sortedDays();
     const anyFlagged = days.some(function (d) {
       return d.plans.some(function (p) { return p.priority !== "normal"; });
     });
     if (anyFlagged) {
-      doc.appendChild(TT.el("p", "export-legend",
-        "MUST = don't miss it · IF TIME = safe to skip if the day runs long"));
-    }
-    if (!days.length) doc.appendChild(TT.el("p", "export-none", "No days planned yet."));
+      doc.appendChild(TT.el("p", "export-legend", TT.t("export.legend")));
+    if (!days.length) doc.appendChild(TT.el("p", "export-none", TT.t("export.noDays")));
 
     days.forEach(function (day) {
       const block = TT.el("div", "export-day");
@@ -49,7 +48,7 @@
           plans.filter(function (p) { return p.done; }).length + "/" + plans.length + " done"));
       }
       block.appendChild(h2);
-      if (!plans.length) block.appendChild(TT.el("div", "export-none", "No plans yet"));
+      if (!plans.length) block.appendChild(TT.el("div", "export-none", TT.t("export.noPlans")));
 
       plans.forEach(function (p) {
         const r = TT.el("div", "export-plan" + (p.done ? " on" : "") +
@@ -59,8 +58,8 @@
           TT.el("span", "export-time", TT.formatTime(p.time) || "—"),
           TT.el("span", "export-text", p.text || "")   // CSS keeps newlines via pre-wrap
         );
-        if (p.priority === "must") r.appendChild(TT.el("span", "export-tag must", "must"));
-        else if (p.priority === "optional") r.appendChild(TT.el("span", "export-tag optional", "if time"));
+        if (p.priority === "must") r.appendChild(TT.el("span", "export-tag must", TT.t("export.tag.must")));
+        else if (p.priority === "optional") r.appendChild(TT.el("span", "export-tag optional", TT.t("export.tag.optional")));
         block.appendChild(r);
       });
       doc.appendChild(block);
@@ -81,7 +80,7 @@
     if (typeof window.html2pdf !== "function") { printFallback(); return Promise.resolve(); }
     btn.disabled = true;
     const label = btn.textContent;
-    btn.textContent = "Creating PDF…";
+    btn.textContent = TT.t("btn.exporting");
     return window.html2pdf().set({
       margin: [12, 12, 12, 12],
       filename: "trip-timeline-" + new Date().toISOString().slice(0, 10) + ".pdf",
@@ -118,7 +117,7 @@
       }
       const m = text.match(new RegExp(PDF_MARK + ":([A-Za-z0-9+/=]+):END"));
       if (!m) {
-        TT.toast("No timeline found in this PDF. Only PDFs saved with the Export PDF button can be opened.", true);
+        TT.toast(TT.t("pdf.none"), true);
         return;
       }
       const data = store.normalize(decodeData(m[1]));
@@ -127,16 +126,16 @@
       const hasPlans = store.state.days.some(function (d) {
         return d.plans.some(function (p) { return p.text || p.time; });
       });
-      if (hasPlans && !confirm("Replace your current timeline with the one in “" + file.name + "”?")) return;
+      if (hasPlans && !confirm(TT.t("confirm.replace", { name: file.name }))) return;
 
       store.replace(data);
       TT.view.render();
-      TT.app.syncFormatToggle();
+      TT.app.paintChrome();
       const n = data.days.reduce(function (a, d) { return a + d.plans.length; }, 0);
-      TT.toast("Opened " + data.days.length + " days and " + n + " plans. Edit away, then export again.");
+      TT.toast(TT.t("pdf.opened", { days: data.days.length, plans: n }));
     }).catch(function (e) {
       console.error(e);
-      TT.toast("This PDF couldn't be read. It may be damaged, try exporting it again.", true);
+      TT.toast(TT.t("pdf.bad"), true);
     });
   };
 })(window.TT);
