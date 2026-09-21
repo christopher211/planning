@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F1E7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1E1C22" media="(prefers-color-scheme: dark)">
+<title>Trip Timeline</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F5F1E7; --paper-raised: #FBF8F1; --ink: #26232B; --ink-soft: #6C6558;
+    --accent: #2F6E5D; --accent-soft: #DCE7DF; --line: #B7AC96; --danger: #A64B3F;
+    --warn: #B7791F; --focus: #2F6E5D; color-scheme: light dark;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1E1C22; --paper-raised: #2A272F; --ink: #EDE8DD; --ink-soft: #A39C8C;
+      --accent: #6FBFA3; --accent-soft: #2A3D36; --line: #4A4638; --danger: #E0897A; --warn: #E3B35C; --focus: #6FBFA3;
+    }
+  }
+  :root[data-theme="light"] { color-scheme: light; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  :root[data-theme="dark"] {
+    --paper: #1E1C22; --paper-raised: #2A272F; --ink: #EDE8DD; --ink-soft: #A39C8C;
+    --accent: #6FBFA3; --accent-soft: #2A3D36; --line: #4A4638; --danger: #E0897A; --warn: #E3B35C; --focus: #6FBFA3;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Work Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+  .wrap {
+    max-width: 700px; margin: 0 auto;
+    padding: 2rem max(1.1rem, env(safe-area-inset-right, 0px)) 4rem max(1.1rem, env(safe-area-inset-left, 0px));
+  }
+
+  /* ---------- header ---------- */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+  h1 { font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 1.7rem; letter-spacing: -0.01em; margin: 0; }
+  h1 em { font-style: italic; color: var(--accent); }
+  .header-actions { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+  .reset-btn {
+    background: none; border: none; color: var(--ink-soft); font-family: inherit; font-size: 0.82rem;
+    cursor: pointer; padding: 0.3rem 0; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line);
+  }
+  .reset-btn:hover { color: var(--danger); }
+  .export-btn {
+    background: var(--accent); color: var(--paper); border: none; border-radius: 6px;
+    padding: 0.5rem 0.9rem; font-family: inherit; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+  }
+  .export-btn:disabled { opacity: 0.6; cursor: wait; }
+  .open-btn {
+    background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 6px;
+    padding: 0.45rem 0.8rem; font-family: inherit; font-size: 0.85rem; cursor: pointer;
+  }
+  .open-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    width: max-content; max-width: calc(100vw - 2rem); z-index: 2000;
+    background: var(--ink); color: var(--paper); border-radius: 8px; padding: 0.7rem 1rem;
+    font-size: 0.88rem; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .toast.error { background: var(--danger); color: #fff; }
+  body.file-over .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; border-radius: 12px; }
+
+  /* ---------- timeline ---------- */
+  .timeline { position: relative; }
+  .timeline::before { content: ""; position: absolute; left: 13px; top: 6px; bottom: 6px; border-left: 2px dashed var(--line); }
+  .empty { padding: 2.5rem 0.5rem 2.5rem 2.6rem; color: var(--ink-soft); font-size: 0.95rem; margin: 0.5rem 0 1.5rem; }
+  .empty strong { color: var(--ink); display: block; margin-bottom: 0.3rem; font-family: "Fraunces", serif; font-weight: 500; font-size: 1.05rem; }
+
+  .day { display: flex; gap: 0.7rem; position: relative; margin-bottom: 2rem; }
+  .rail { width: 28px; flex-shrink: 0; display: flex; justify-content: center; padding-top: 0.45rem; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 3px solid var(--paper); position: relative; z-index: 1; }
+  .day.all-done .dot { background: var(--paper); box-shadow: inset 0 0 0 2px var(--accent); }
+  .day-content { flex: 1; min-width: 0; }
+  .day-head { display: flex; align-items: center; gap: 0.2rem 0.6rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .date-btn {
+    background: none; border: none; font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 1.15rem;
+    color: var(--ink); cursor: pointer; padding: 0.1rem 0; display: flex; align-items: baseline; gap: 0.4rem;
+  }
+  .date-btn small { font-family: "Work Sans", sans-serif; font-size: 0.72rem; color: var(--ink-soft); font-weight: 500; }
+  .progress { font-size: 0.75rem; color: var(--ink-soft); }
+  .day-tools { margin-left: auto; display: flex; align-items: center; gap: 0.1rem; }
+  .text-btn { background: none; border: none; color: var(--ink-soft); font-family: inherit; font-size: 0.76rem; cursor: pointer; padding: 0.3rem 0.35rem; border-radius: 5px; }
+  .text-btn:hover { color: var(--accent); }
+  .date-input, .new-date {
+    font-family: inherit; font-size: 1rem; color: var(--ink); background: var(--paper-raised);
+    border: 1px solid var(--line); border-radius: 6px; padding: 0.35rem 0.5rem; min-height: 36px;
+  }
+  .hidden { display: none !important; }
+  .icon-btn {
+    background: none; border: none; color: var(--ink-soft); font-size: 1.15rem; line-height: 1;
+    cursor: pointer; width: 30px; height: 30px; border-radius: 6px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .icon-btn:hover { color: var(--danger); background: var(--accent-soft); }
+
+  .plans { display: flex; flex-direction: column; min-height: 6px; border-top: 1px dotted var(--line); }
+  .plans.is-empty { min-height: 2.6rem; border: 1px dashed var(--line); border-radius: 8px; }
+  .plans.is-empty::after { content: "No plans yet"; font-size: 0.8rem; color: var(--ink-soft); padding: 0.7rem 0.8rem; }
+  body.dragging .plans.is-empty::after { content: "Drop a plan here"; }
+
+  /* plan row: one line on wide screens, time above text on phones */
+  .plan-row {
+    display: grid;
+    grid-template-columns: 26px 24px 6.6rem minmax(0, 1fr) 30px;
+    grid-template-areas: "h c t txt x";
+    column-gap: 0.45rem; align-items: start;
+    padding: 0.4rem 0; border-bottom: 1px dotted var(--line); background: var(--paper);
+  }
+  .handle { grid-area: h; }
+  .check { grid-area: c; }
+  .time { grid-area: t; }
+  .plan-text { grid-area: txt; }
+  .remove-plan { grid-area: x; }
+
+  .handle {
+    touch-action: none; cursor: grab; background: none; border: none; color: var(--ink-soft);
+    width: 26px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 5px; padding: 0;
+  }
+  .handle:hover { background: var(--accent-soft); color: var(--ink); }
+  .handle svg { width: 10px; height: 16px; fill: currentColor; pointer-events: none; }
+  .check {
+    appearance: none; -webkit-appearance: none; margin: 6px 0 0; width: 20px; height: 20px;
+    border: 2px solid var(--line); border-radius: 5px; cursor: pointer;
+    display: grid; place-items: center; background: var(--paper-raised);
+  }
+  .check:checked { background: var(--accent); border-color: var(--accent); }
+  .check:checked::after { content: ""; width: 5px; height: 10px; border: solid var(--paper); border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+  .time {
+    font-family: inherit; font-size: 0.85rem; color: var(--ink); background: transparent;
+    border: 1px solid transparent; border-radius: 5px; padding: 0.25rem 0.2rem; min-height: 32px; width: 100%;
+    -webkit-appearance: none; appearance: none; text-align: left;
+  }
+  .time::-webkit-date-and-time-value { text-align: left; }
+  .time:hover { border-color: var(--line); }
+  .time:focus { outline: none; border-color: var(--focus); }
+  .plan-text {
+    display: block; width: 100%; background: none; border: none; border-bottom: 1px solid transparent; border-radius: 0;
+    font-family: inherit; font-size: 0.93rem; line-height: 1.4; color: var(--ink);
+    padding: 0.35rem 0.1rem; resize: none; overflow: hidden; min-height: 32px; overflow-wrap: anywhere;
+  }
+  .plan-text::placeholder { color: var(--ink-soft); opacity: 0.7; }
+  .plan-text:focus { outline: none; border-bottom-color: var(--focus); }
+  .plan-row.done .plan-text { text-decoration: line-through; text-decoration-color: var(--ink-soft); color: var(--ink-soft); }
+  .plan-row.done .time { color: var(--ink-soft); }
+
+  .drag-placeholder { opacity: 0.35; }
+  .drag-ghost {
+    position: fixed; z-index: 1000; pointer-events: none; margin: 0;
+    background: var(--paper-raised); border: 1px solid var(--accent); border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(38, 35, 43, 0.2);
+  }
+
+  .add-plan-btn { margin-top: 0.4rem; background: none; border: none; color: var(--accent); font-family: inherit; font-size: 0.85rem; cursor: pointer; padding: 0.35rem 0; }
+  .add-plan-btn:hover { text-decoration: underline; }
+
+  .add-day-row { display: flex; gap: 0.7rem; margin-top: 0.4rem; }
+  .add-day-rail { width: 28px; flex-shrink: 0; display: flex; justify-content: center; padding-top: 0.6rem; }
+  .dot-ghost { width: 14px; height: 14px; border-radius: 50%; border: 2px dashed var(--line); }
+  .add-day-btn { background: none; border: 1px dashed var(--line); color: var(--ink-soft); font-family: inherit; font-size: 0.9rem; border-radius: 8px; padding: 0.55rem 0.95rem; cursor: pointer; }
+  .add-day-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .add-day-form { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .confirm-btn { background: var(--accent); color: var(--paper); border: none; border-radius: 6px; padding: 0.5rem 0.9rem; font-family: inherit; font-size: 0.88rem; cursor: pointer; }
+  .confirm-btn:disabled { opacity: 0.6; cursor: wait; }
+  .cancel-btn { background: none; border: none; color: var(--ink-soft); font-family: inherit; font-size: 0.88rem; cursor: pointer; padding: 0.5rem 0.3rem; }
+
+  button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  /* ---------- phones ---------- */
+  @media (max-width: 560px) {
+    .wrap { padding-top: 1.4rem; padding-left: max(0.75rem, env(safe-area-inset-left, 0px)); padding-right: max(0.75rem, env(safe-area-inset-right, 0px)); }
+    header { margin-bottom: 1.6rem; }
+    h1 { font-size: 1.55rem; }
+    .header-actions { width: 100%; justify-content: space-between; gap: 0.6rem; }
+    .header-actions .reset-btn { margin-left: auto; }
+    .timeline::before { left: 9px; }
+    .rail, .add-day-rail { width: 20px; }
+    .day, .add-day-row { gap: 0.55rem; }
+    .dot { width: 12px; height: 12px; }
+    .plan-row {
+      grid-template-columns: 26px 24px minmax(0, 1fr) 30px;
+      grid-template-areas: "h c t x" "h c txt x";
+      column-gap: 0.35rem; row-gap: 0;
+    }
+    .time { width: auto; justify-self: start; min-width: 6rem; font-size: 0.82rem; color: var(--ink-soft); padding-left: 0.1rem; min-height: 28px; }
+    .plan-text { padding-top: 0.1rem; }
+    /* 16px stops iPhone from zooming in when a field is tapped */
+    .plan-text, .date-input, .new-date { font-size: 16px; }
+    .day-tools .text-btn { padding-left: 0.2rem; padding-right: 0.2rem; }
+  }
+
+  /* ---------- PDF document (always light) ---------- */
+  .export-doc { background: #fff; color: #26232B; font-family: "Work Sans", Arial, sans-serif; padding: 4px 6px; width: 180mm; }
+  .export-doc h1 { font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 24px; margin: 0 0 4px; color: #26232B; }
+  .export-sub { font-size: 11px; color: #6C6558; margin: 0 0 22px; }
+  .export-day { border-left: 3px solid #2F6E5D; padding: 2px 0 2px 14px; margin: 0 0 18px; page-break-inside: avoid; break-inside: avoid; }
+  .export-day h2 { font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 16px; margin: 0 0 8px; color: #26232B; }
+  .export-day h2 span { font-family: "Work Sans", Arial, sans-serif; font-size: 11px; color: #6C6558; margin-left: 8px; }
+  .export-plan { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.45; padding: 5px 0; border-top: 1px dotted #B7AC96; }
+  .export-box { width: 12px; height: 12px; border: 1.5px solid #B7AC96; border-radius: 3px; flex-shrink: 0; margin-top: 3px; position: relative; }
+  .export-box.on { background: #2F6E5D; border-color: #2F6E5D; }
+  .export-box.on::after { content: ""; position: absolute; left: 3px; top: 0; width: 3px; height: 7px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+  .export-time { width: 62px; flex-shrink: 0; color: #6C6558; font-size: 12px; }
+  .export-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .export-plan.on .export-text { color: #6C6558; text-decoration: line-through; }
+  .export-none { font-size: 12px; color: #6C6558; font-style: italic; }
+
+  #printView { display: none; }
+  @media print {
+    body { background: #fff; }
+    .wrap, .toast { display: none !important; }
+    #printView { display: block; }
+    .export-doc { width: auto; }
+    @page { margin: 14mm; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Trip <em>Timeline</em></h1>
+    <div class="header-actions">
+      <button class="open-btn" id="openBtn" type="button">Open PDF</button>
+      <input class="file-input" id="fileInput" type="file" accept="application/pdf,.pdf" tabindex="-1" aria-hidden="true">
+      <button class="reset-btn" id="resetBtn" type="button">clear all</button>
+      <button class="export-btn" id="exportBtn" type="button">Export PDF</button>
+    </div>
+  </header>
+
+  <div class="timeline" id="timeline"></div>
+
+  <div class="add-day-row">
+    <div class="add-day-rail"><span class="dot-ghost"></span></div>
+    <div id="addDayArea"></div>
+  </div>
+</div>
+
+<div id="printView"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+(function () {
+  const KEY = "timeline-planner-v1";
+  const PDF_MARK = "TRIPTIMELINE";
+
+  const timelineEl = document.getElementById("timeline");
+  const addDayArea = document.getElementById("addDayArea");
+
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "id-" + Date.now() + "-" + Math.random().toString(16).slice(2));
+  const newPlan = (text = "", time = "") => ({ id: uid(), text, time, done: false });
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  // ---------- data ----------
+  function defaultState() {
+    return { updatedAt: 0, days: [
+      { id: uid(), date: "2026-12-04", plans: [newPlan("Fly MSP → Seattle (Alaska 387)", "07:00"), newPlan("Fly Seattle → Seoul (Alaska 171)", "12:40")] },
+      { id: uid(), date: "2026-12-05", plans: [newPlan("Fly Seoul → Ho Chi Minh City (Asiana OZ735)", "19:25"), newPlan("Land at Tan Son Nhat", "22:50")] },
+      { id: uid(), date: "2026-12-25", plans: [newPlan("Fly SGN → Seoul (Delta 7920)", "08:00"), newPlan("Fly Seoul → Minneapolis (Delta 170)", "20:35")] }
+    ]};
+  }
+  function normalize(obj) {
+    if (!obj || !Array.isArray(obj.days)) return null;
+    return {
+      updatedAt: Number(obj.updatedAt) || 0,
+      days: obj.days.map(d => ({
+        id: d.id || uid(), date: d.date || "",
+        plans: (d.plans || []).map(p => ({ id: p.id || uid(), text: p.text || "", time: p.time || "", done: !!p.done }))
+      }))
+    };
+  }
+  function loadLocal() { try { return normalize(JSON.parse(localStorage.getItem(KEY))); } catch (e) { return null; } }
+  function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { console.error(e); } }
+  function saveState() { state.updatedAt = Date.now(); saveLocal(); }
+
+  let state = loadLocal() || defaultState();
+
+  const parseLocalDate = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const sortedDays = () => [...state.days].sort((a, b) => !a.date ? 1 : !b.date ? -1 : a.date.localeCompare(b.date));
+  function formatTime(t) {
+    if (!t) return "";
+    const [h, m] = t.split(":").map(Number);
+    return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+  function fit(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }
+  function fitAll() { document.querySelectorAll(".plan-text").forEach(fit); }
+
+  // ---------- render ----------
+  function render() {
+    timelineEl.innerHTML = "";
+    if (state.days.length === 0) {
+      timelineEl.innerHTML = '<div class="empty"><strong>No days yet</strong>Add your first day below to start planning.</div>';
+    } else {
+      sortedDays().forEach(day => timelineEl.appendChild(renderDay(day)));
+    }
+    renderAddDay();
+    requestAnimationFrame(fitAll);
+  }
+
+  function renderDay(day) {
+    const row = el("div", "day");
+    row.dataset.dayId = day.id;
+    const doneCount = day.plans.filter(p => p.done).length;
+    if (day.plans.length && doneCount === day.plans.length) row.classList.add("all-done");
+
+    const rail = el("div", "rail"); rail.appendChild(el("span", "dot")); row.appendChild(rail);
+    const content = el("div", "day-content");
+
+    const head = el("div", "day-head");
+    const d = day.date ? parseLocalDate(day.date) : null;
+    const dateBtn = el("button", "date-btn"); dateBtn.type = "button";
+    dateBtn.innerHTML = d ? d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + " <small>" + d.getFullYear() + "</small>" : "Set a date";
+    const dateInput = el("input", "date-input hidden"); dateInput.type = "date"; dateInput.value = day.date || "";
+    dateBtn.addEventListener("click", () => { dateBtn.classList.add("hidden"); dateInput.classList.remove("hidden"); dateInput.focus(); });
+    let committed = false;
+    const commitDate = () => {
+      if (committed) return; committed = true;
+      if (dateInput.value && dateInput.value !== day.date) { day.date = dateInput.value; saveState(); }
+      render();
+    };
+    dateInput.addEventListener("change", commitDate);
+    dateInput.addEventListener("blur", commitDate);
+    head.append(dateBtn, dateInput);
+    if (day.plans.length) head.appendChild(el("span", "progress", doneCount + "/" + day.plans.length + " done"));
+
+    const tools = el("div", "day-tools");
+    if (day.plans.length > 1) {
+      const sortBtn = el("button", "text-btn", "sort by time"); sortBtn.type = "button";
+      sortBtn.addEventListener("click", () => {
+        const timed = day.plans.filter(p => p.time).sort((a, b) => a.time.localeCompare(b.time));
+        day.plans = [...timed, ...day.plans.filter(p => !p.time)];
+        saveState(); render();
+      });
+      tools.appendChild(sortBtn);
+    }
+    const delDay = el("button", "icon-btn", "×"); delDay.type = "button";
+    delDay.title = "Remove day"; delDay.setAttribute("aria-label", "Remove day");
+    delDay.addEventListener("click", () => {
+      if (day.plans.some(p => p.text) && !confirm("Remove this day and its plans?")) return;
+      state.days = state.days.filter(x => x.id !== day.id); saveState(); render();
+    });
+    tools.appendChild(delDay);
+    head.appendChild(tools);
+    content.appendChild(head);
+
+    const list = el("div", "plans" + (day.plans.length ? "" : " is-empty"));
+    list.dataset.dayId = day.id;
+    day.plans.forEach(plan => list.appendChild(renderPlan(plan)));
+    content.appendChild(list);
+
+    const addBtn = el("button", "add-plan-btn", "+ add plan"); addBtn.type = "button";
+    addBtn.addEventListener("click", () => {
+      const p = newPlan(); day.plans.push(p); saveState(); render();
+      const input = document.querySelector('[data-plan-id="' + p.id + '"] .plan-text');
+      if (input) input.focus();
+    });
+    content.appendChild(addBtn);
+    row.appendChild(content);
+    return row;
+  }
+
+  function renderPlan(plan) {
+    const row = el("div", "plan-row" + (plan.done ? " done" : ""));
+    row.dataset.planId = plan.id;
+
+    const handle = el("button", "handle"); handle.type = "button";
+    handle.title = "Drag to move (or use ↑ ↓ keys)"; handle.setAttribute("aria-label", "Move plan");
+    handle.innerHTML = '<svg viewBox="0 0 10 16"><circle cx="2" cy="2" r="1.6"/><circle cx="8" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/><circle cx="8" cy="14" r="1.6"/></svg>';
+    handle.addEventListener("pointerdown", e => startDrag(e, row));
+    handle.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); movePlanByKey(plan.id, e.key === "ArrowUp" ? -1 : 1); }
+    });
+
+    const check = el("input", "check"); check.type = "checkbox"; check.checked = plan.done;
+    check.setAttribute("aria-label", "Mark as done");
+    check.addEventListener("change", () => { plan.done = check.checked; saveState(); render(); });
+
+    const time = el("input", "time"); time.type = "time"; time.value = plan.time || "";
+    time.setAttribute("aria-label", "Time");
+    time.addEventListener("change", () => { plan.time = time.value; saveState(); });
+
+    const text = el("textarea", "plan-text"); text.rows = 1;
+    text.placeholder = "What's the plan?"; text.value = plan.text || "";
+    text.addEventListener("input", () => { plan.text = text.value.replace(/\n/g, " "); fit(text); saveState(); });
+    text.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); text.blur(); } });
+
+    const remove = el("button", "icon-btn remove-plan", "×"); remove.type = "button";
+    remove.title = "Remove plan"; remove.setAttribute("aria-label", "Remove plan");
+    remove.addEventListener("click", () => {
+      state.days.forEach(d => { d.plans = d.plans.filter(p => p.id !== plan.id); });
+      saveState(); render();
+    });
+
+    row.append(handle, check, time, text, remove);
+    return row;
+  }
+
+  function renderAddDay() {
+    addDayArea.innerHTML = "";
+    const btn = el("button", "add-day-btn", "+ Add day"); btn.type = "button";
+    btn.addEventListener("click", () => {
+      addDayArea.innerHTML = "";
+      const form = el("div", "add-day-form");
+      const input = el("input", "new-date"); input.type = "date";
+      const days = sortedDays();
+      if (days.length && days[days.length - 1].date) {
+        const last = parseLocalDate(days[days.length - 1].date); last.setDate(last.getDate() + 1);
+        input.value = last.getFullYear() + "-" + String(last.getMonth() + 1).padStart(2, "0") + "-" + String(last.getDate()).padStart(2, "0");
+      }
+      const ok = el("button", "confirm-btn", "Add"); ok.type = "button";
+      ok.addEventListener("click", () => {
+        if (!input.value) { input.focus(); return; }
+        if (!state.days.some(d => d.date === input.value)) {
+          state.days.push({ id: uid(), date: input.value, plans: [newPlan()] }); saveState();
+        }
+        render();
+      });
+      const cancel = el("button", "cancel-btn", "Cancel"); cancel.type = "button";
+      cancel.addEventListener("click", render);
+      form.append(input, ok, cancel);
+      addDayArea.appendChild(form);
+    });
+    addDayArea.appendChild(btn);
+  }
+
+  let resizeTimer;
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitAll, 120); });
+
+  // ---------- drag & drop (mouse + touch) ----------
+  let drag = null;
+
+  function startDrag(e, rowEl) {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    const rect = rowEl.getBoundingClientRect();
+    const ghost = rowEl.cloneNode(true);
+    // cloned fields don't carry typed values, copy them across
+    const srcFields = rowEl.querySelectorAll("input, textarea"), dstFields = ghost.querySelectorAll("input, textarea");
+    srcFields.forEach((f, i) => { if (f.type === "checkbox") dstFields[i].checked = f.checked; else dstFields[i].value = f.value; });
+    ghost.classList.add("drag-ghost");
+    Object.assign(ghost.style, { width: rect.width + "px", left: rect.left + "px", top: rect.top + "px" });
+    document.body.appendChild(ghost);
+    rowEl.classList.add("drag-placeholder");
+    document.body.classList.add("dragging");
+    drag = { rowEl, ghost, offsetY: e.clientY - rect.top, y: e.clientY, raf: 0 };
+    window.addEventListener("pointermove", onDragMove, { passive: false });
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    autoScroll();
+  }
+  function onDragMove(e) {
+    if (!drag) return;
+    e.preventDefault();
+    drag.y = e.clientY;
+    drag.ghost.style.top = (e.clientY - drag.offsetY) + "px";
+    placeAt(e.clientY);
+  }
+  function placeAt(y) {
+    const tRect = timelineEl.getBoundingClientRect();
+    const x = tRect.left + Math.min(tRect.width / 2, 200);
+    const target = document.elementFromPoint(x, y);
+    if (!target) return;
+    let list = target.closest(".plans");
+    if (!list) { const day = target.closest(".day"); if (day) list = day.querySelector(".plans"); }
+    if (!list) return;
+    const rows = [...list.querySelectorAll(".plan-row")].filter(r => r !== drag.rowEl);
+    let before = null;
+    for (const r of rows) { const b = r.getBoundingClientRect(); if (y < b.top + b.height / 2) { before = r; break; } }
+    if (drag.rowEl.parentNode === list && drag.rowEl.nextElementSibling === before) return;
+    const oldList = drag.rowEl.parentNode;
+    if (before) list.insertBefore(drag.rowEl, before); else list.appendChild(drag.rowEl);
+    [oldList, list].forEach(l => l.classList.toggle("is-empty", !l.querySelector(".plan-row")));
+  }
+  function autoScroll() {
+    if (!drag) return;
+    const edge = 80, h = window.innerHeight;
+    let dy = 0;
+    if (drag.y < edge) dy = -Math.ceil((edge - drag.y) / 5);
+    else if (drag.y > h - edge) dy = Math.ceil((drag.y - (h - edge)) / 5);
+    if (dy) { window.scrollBy(0, dy); placeAt(drag.y); }
+    drag.raf = requestAnimationFrame(autoScroll);
+  }
+  function endDrag() {
+    if (!drag) return;
+    cancelAnimationFrame(drag.raf);
+    window.removeEventListener("pointermove", onDragMove);
+    window.removeEventListener("pointerup", endDrag);
+    window.removeEventListener("pointercancel", endDrag);
+    drag.ghost.remove();
+    drag.rowEl.classList.remove("drag-placeholder");
+    document.body.classList.remove("dragging");
+    drag = null;
+    const all = new Map();
+    state.days.forEach(d => d.plans.forEach(p => all.set(p.id, p)));
+    document.querySelectorAll(".plans").forEach(list => {
+      const day = state.days.find(d => d.id === list.dataset.dayId);
+      if (day) day.plans = [...list.querySelectorAll(".plan-row")].map(r => all.get(r.dataset.planId)).filter(Boolean);
+    });
+    saveState(); render();
+  }
+  function movePlanByKey(planId, dir) {
+    const days = sortedDays();
+    const di = days.findIndex(d => d.plans.some(p => p.id === planId));
+    if (di < 0) return;
+    const day = days[di];
+    const pi = day.plans.findIndex(p => p.id === planId);
+    const [plan] = day.plans.splice(pi, 1);
+    if (dir < 0) {
+      if (pi > 0) day.plans.splice(pi - 1, 0, plan);
+      else if (days[di - 1]) days[di - 1].plans.push(plan);
+      else day.plans.splice(pi, 0, plan);
+    } else {
+      if (pi < day.plans.length) day.plans.splice(pi + 1, 0, plan);
+      else if (days[di + 1]) days[di + 1].plans.unshift(plan);
+      else day.plans.splice(pi, 0, plan);
+    }
+    saveState(); render();
+    const h = document.querySelector('[data-plan-id="' + planId + '"] .handle');
+    if (h) h.focus();
+  }
+
+  // ---------- reset ----------
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    if (confirm("Clear the whole timeline? This can't be undone.")) { state.days = []; saveState(); render(); }
+  });
+
+  // ---------- toast ----------
+  let toastTimer;
+  function toast(msg, isError) {
+    document.querySelectorAll(".toast").forEach(t => t.remove());
+    const t = el("div", "toast" + (isError ? " error" : ""), msg);
+    t.setAttribute("role", "status");
+    document.body.appendChild(t);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.remove(), isError ? 6000 : 3500);
+  }
+
+  // ---------- data <-> text that can live inside a PDF ----------
+  function encodeData(obj) {
+    const bytes = new TextEncoder().encode(JSON.stringify(obj));
+    let bin = ""; bytes.forEach(b => bin += String.fromCharCode(b));
+    return btoa(bin);
+  }
+  function decodeData(b64) {
+    const bin = atob(b64);
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+
+  // ---------- open a PDF made by this page ----------
+  const fileInput = document.getElementById("fileInput");
+  document.getElementById("openBtn").addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]) importPdf(fileInput.files[0]); fileInput.value = ""; });
+
+  async function importPdf(file) {
+    try {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      let text = ""; const CH = 0x8000;
+      for (let i = 0; i < buf.length; i += CH) text += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+      const m = text.match(new RegExp(PDF_MARK + ":([A-Za-z0-9+/=]+):END"));
+      if (!m) { toast("No timeline found in this PDF. Only PDFs saved with the Export PDF button can be opened.", true); return; }
+      const data = normalize(decodeData(m[1]));
+      if (!data) throw new Error("bad data");
+      const hasPlans = state.days.some(d => d.plans.some(p => p.text || p.time));
+      if (hasPlans && !confirm("Replace your current timeline with the one in “" + file.name + "”?")) return;
+      state = data; saveState(); render();
+      const n = data.days.reduce((a, d) => a + d.plans.length, 0);
+      toast("Opened " + data.days.length + " days and " + n + " plans. Edit away, then export again.");
+    } catch (e) {
+      console.error(e);
+      toast("This PDF couldn't be read. It may be damaged, try exporting it again.", true);
+    }
+  }
+
+  // drop a PDF anywhere on the page
+  let dragDepth = 0;
+  const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+  window.addEventListener("dragenter", e => { if (hasFiles(e)) { e.preventDefault(); dragDepth++; document.body.classList.add("file-over"); } });
+  window.addEventListener("dragover", e => { if (hasFiles(e)) e.preventDefault(); });
+  window.addEventListener("dragleave", e => { if (hasFiles(e) && --dragDepth <= 0) { dragDepth = 0; document.body.classList.remove("file-over"); } });
+  window.addEventListener("drop", e => {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); dragDepth = 0; document.body.classList.remove("file-over");
+    const f = e.dataTransfer.files[0]; if (f) importPdf(f);
+  });
+
+  // ---------- PDF export ----------
+  const exportBtn = document.getElementById("exportBtn");
+  const printView = document.getElementById("printView");
+
+  function buildExportNode() {
+    const doc = el("div", "export-doc");
+    doc.appendChild(el("h1", null, "Trip Timeline"));
+    doc.appendChild(el("p", "export-sub", "Exported " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })));
+    const days = sortedDays();
+    if (!days.length) doc.appendChild(el("p", "export-none", "No days planned yet."));
+    days.forEach(day => {
+      const block = el("div", "export-day");
+      const h2 = el("h2", null, day.date ? parseLocalDate(day.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "No date");
+      const plans = day.plans.filter(p => (p.text || "").trim() || p.time);
+      if (plans.length) h2.appendChild(el("span", null, plans.filter(p => p.done).length + "/" + plans.length + " done"));
+      block.appendChild(h2);
+      if (!plans.length) block.appendChild(el("div", "export-none", "No plans yet"));
+      plans.forEach(p => {
+        const r = el("div", "export-plan" + (p.done ? " on" : ""));
+        r.append(el("span", "export-box" + (p.done ? " on" : "")), el("span", "export-time", formatTime(p.time) || "—"), el("span", "export-text", p.text || ""));
+        block.appendChild(r);
+      });
+      doc.appendChild(block);
+    });
+    return doc;
+  }
+  function printFallback() { printView.innerHTML = ""; printView.appendChild(buildExportNode()); window.print(); }
+
+  exportBtn.addEventListener("click", async () => {
+    if (typeof window.html2pdf !== "function") { printFallback(); return; }
+    exportBtn.disabled = true;
+    const label = exportBtn.textContent;
+    exportBtn.textContent = "Creating PDF…";
+    try {
+      await window.html2pdf().set({
+        margin: [12, 12, 12, 12], filename: "trip-timeline-" + new Date().toISOString().slice(0, 10) + ".pdf",
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, backgroundColor: "#ffffff" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"], avoid: ".export-day" }
+      }).from(buildExportNode()).toPdf().get("pdf").then(pdf => {
+        // the timeline itself rides along inside the PDF so "Open PDF" can bring it back
+        pdf.setProperties({ title: "Trip Timeline", subject: PDF_MARK + ":" + encodeData({ v: 1, updatedAt: state.updatedAt, days: state.days }) + ":END", creator: "Trip Timeline" });
+      }).save();
+    } catch (e) { console.error(e); printFallback(); }
+    finally { exportBtn.disabled = false; exportBtn.textContent = label; }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
