@@ -26,7 +26,7 @@
   // ---------- the printable document ----------
   function buildExportNode() {
     const doc = TT.el("div", "export-doc");
-    doc.appendChild(TT.el("h1", null, TT.t("export.title")));
+    doc.appendChild(TT.el("h1", null, store.trip().name || TT.t("export.title")));
     doc.appendChild(TT.el("p", "export-sub", TT.t("export.on", {
       date: new Date().toLocaleDateString(TT.locale(), { year: "numeric", month: "long", day: "numeric" })
     })));
@@ -37,6 +37,7 @@
     });
     if (anyFlagged) {
       doc.appendChild(TT.el("p", "export-legend", TT.t("export.legend")));
+    }
     if (!days.length) doc.appendChild(TT.el("p", "export-none", TT.t("export.noDays")));
 
     days.forEach(function (day) {
@@ -92,8 +93,8 @@
       doc.setProperties({
         title: "Trip Timeline",
         subject: PDF_MARK + ":" + encodeData({
-          v: 2, updatedAt: store.state.updatedAt,
-          settings: store.state.settings, days: store.state.days
+          v: 3, updatedAt: store.state.updatedAt, settings: store.state.settings,
+          name: store.trip().name, days: store.trip().days
         }) + ":END",
         creator: "Trip Timeline"
       });
@@ -120,19 +121,16 @@
         TT.toast(TT.t("pdf.none"), true);
         return;
       }
-      const data = store.normalize(decodeData(m[1]));
-      if (!data) throw new Error("bad data");
+      const raw = decodeData(m[1]);
+      const days = store.normalizeDays(raw.days || (raw.trips && raw.trips[0] && raw.trips[0].days));
+      if (!days || !days.length) throw new Error("bad data");
 
-      const hasPlans = store.state.days.some(function (d) {
-        return d.plans.some(function (p) { return p.text || p.time; });
-      });
-      if (hasPlans && !confirm(TT.t("confirm.replace", { name: file.name }))) return;
-
-      store.replace(data);
-      TT.view.render();
-      TT.app.paintChrome();
-      const n = data.days.reduce(function (a, d) { return a + d.plans.length; }, 0);
-      TT.toast(TT.t("pdf.opened", { days: data.days.length, plans: n }));
+      // imports land as a new trip rather than overwriting whatever is open
+      const name = raw.name || file.name.replace(/\.pdf$/i, "");
+      store.addTripWithDays(name, days);
+      TT.app.refresh();
+      const n = days.reduce(function (a, d) { return a + d.plans.length; }, 0);
+      TT.toast(TT.t("pdf.opened", { days: days.length, plans: n }));
     }).catch(function (e) {
       console.error(e);
       TT.toast(TT.t("pdf.bad"), true);

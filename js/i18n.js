@@ -9,6 +9,38 @@
 
   const STRINGS = {
     en: {
+      "trip.untitled": "Untitled trip",
+      "trip.newName": "Name your new trip",
+      "trip.renameTitle": "Rename this trip",
+      "trip.copyOf": "{name} (copy)",
+      "trip.switch": "Switch trip",
+      "trip.title": "Your trips",
+      "trip.new": "+ New trip",
+      "trip.rename": "rename",
+      "trip.duplicate": "duplicate",
+      "trip.delete": "Delete trip",
+      "trip.deleteConfirm": "Delete \u201C{name}\u201D and everything in it? This can't be undone.",
+      "trip.favorite": "Add to favourites",
+      "trip.unfavorite": "Remove from favourites",
+      "trip.noDates": "no dates yet",
+      "trip.counts": "{days} days \u00B7 {done}/{total} done",
+
+      "day.collapse": "Collapse this day",
+      "day.expand": "Expand this day",
+      "day.planCount": "{n} plans",
+      "btn.collapseAll": "collapse all",
+      "btn.expandAll": "expand all",
+
+      "view.timeline": "Timeline",
+      "view.calendar": "Calendar",
+      "view.label": "View",
+      "cal.more": "+{n} more",
+
+      "btn.calendarExport": "Calendar file",
+      "btn.calendarExport.title": "Download a .ics file you can import into Apple, Google or Outlook calendars",
+      "ics.done": "Downloaded {n} events. Open the file to add them to your calendar.",
+      "ics.nothing": "Nothing to export yet \u2014 add some plans first.",
+
       "title.1": "Trip",
       "title.2": "Timeline",
       "tagline": "Drag a day to reshuffle it — dates always stay in trip order. Flag what's a must and what can slip.",
@@ -108,6 +140,38 @@
     },
 
     vi: {
+      "trip.untitled": "Chuy\u1EBFn \u0111i ch\u01B0a \u0111\u1EB7t t\u00EAn",
+      "trip.newName": "\u0110\u1EB7t t\u00EAn cho chuy\u1EBFn \u0111i m\u1EDBi",
+      "trip.renameTitle": "\u0110\u1ED5i t\u00EAn chuy\u1EBFn \u0111i",
+      "trip.copyOf": "{name} (b\u1EA3n sao)",
+      "trip.switch": "Chuy\u1EC3n chuy\u1EBFn \u0111i",
+      "trip.title": "C\u00E1c chuy\u1EBFn \u0111i c\u1EE7a b\u1EA1n",
+      "trip.new": "+ Chuy\u1EBFn \u0111i m\u1EDBi",
+      "trip.rename": "\u0111\u1ED5i t\u00EAn",
+      "trip.duplicate": "nh\u00E2n b\u1EA3n",
+      "trip.delete": "Xo\u00E1 chuy\u1EBFn \u0111i",
+      "trip.deleteConfirm": "Xo\u00E1 \u201C{name}\u201D c\u00F9ng to\u00E0n b\u1ED9 n\u1ED9i dung? Kh\u00F4ng th\u1EC3 ho\u00E0n t\u00E1c.",
+      "trip.favorite": "Th\u00EAm v\u00E0o y\u00EAu th\u00EDch",
+      "trip.unfavorite": "B\u1ECF kh\u1ECFi y\u00EAu th\u00EDch",
+      "trip.noDates": "ch\u01B0a c\u00F3 ng\u00E0y",
+      "trip.counts": "{days} ng\u00E0y \u00B7 {done}/{total} xong",
+
+      "day.collapse": "Thu g\u1ECDn ng\u00E0y n\u00E0y",
+      "day.expand": "M\u1EDF r\u1ED9ng ng\u00E0y n\u00E0y",
+      "day.planCount": "{n} vi\u1EC7c",
+      "btn.collapseAll": "thu g\u1ECDn t\u1EA5t c\u1EA3",
+      "btn.expandAll": "m\u1EDF r\u1ED9ng t\u1EA5t c\u1EA3",
+
+      "view.timeline": "D\u00F2ng th\u1EDDi gian",
+      "view.calendar": "L\u1ECBch",
+      "view.label": "Ki\u1EC3u xem",
+      "cal.more": "+{n} n\u1EEFa",
+
+      "btn.calendarExport": "Th\u00EAm v\u00E0o l\u1ECBch",
+      "btn.calendarExport.title": "T\u1EA3i t\u1EC7p .ics \u0111\u1EC3 nh\u1EADp v\u00E0o l\u1ECBch Apple, Google ho\u1EB7c Outlook",
+      "ics.done": "\u0110\u00E3 t\u1EA3i {n} s\u1EF1 ki\u1EC7n. M\u1EDF t\u1EC7p \u0111\u1EC3 th\u00EAm v\u00E0o l\u1ECBch.",
+      "ics.nothing": "Ch\u01B0a c\u00F3 g\u00EC \u0111\u1EC3 xu\u1EA5t \u2014 h\u00E3y th\u00EAm v\u00E0i vi\u1EC7c tr\u01B0\u1EDBc.",
+
       "title.1": "Lịch Trình",
       "title.2": "Chuyến Đi",
       "tagline": "Kéo một ngày để sắp xếp lại — ngày tháng luôn giữ đúng thứ tự chuyến đi. Đánh dấu việc bắt buộc và việc có thể bỏ qua.",

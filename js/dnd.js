@@ -189,7 +189,7 @@
     }
 
     const all = new Map();
-    store.state.days.forEach(function (d) {
+    store.days().forEach(function (d) {
       d.plans.forEach(function (p) { all.set(p.id, p); });
     });
     document.querySelectorAll(".plans").forEach(function (list) {
@@ -205,7 +205,7 @@
 
   // ---------- keyboard equivalents ----------
   dnd.movePlanByKey = function (planId, dir) {
-    const days = TT.store.state.days;
+    const days = TT.store.days();
     let di = -1;
     for (let i = 0; i < days.length; i++) {
       if (days[i].plans.some(function (p) { return p.id === planId; })) { di = i; break; }

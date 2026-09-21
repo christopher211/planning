@@ -25,10 +25,14 @@
   <header>
     <div class="title-block">
       <h1><span id="title1">Trip</span> <em id="title2">Timeline</em></h1>
+      <button class="trips-btn" id="tripsBtn" type="button">
+        <span class="trip-star hidden">★</span><span class="trip-name"></span><span class="trip-caret">▾</span>
+      </button>
       <p class="tagline" id="tagline"></p>
     </div>
     <div class="header-actions">
       <button class="open-btn" id="shareBtn" type="button"></button>
+      <button class="open-btn" id="icsBtn" type="button"></button>
       <button class="open-btn" id="openBtn" type="button"></button>
       <input class="file-input" id="fileInput" type="file" accept="application/pdf,.pdf" tabindex="-1" aria-hidden="true">
       <button class="reset-btn" id="resetBtn" type="button"></button>
@@ -40,6 +44,11 @@
     <ul class="legend" id="legend"></ul>
     <div class="toolbar-actions">
       <button class="text-btn" id="sortDateBtn" type="button"></button>
+      <button class="text-btn" id="collapseBtn" type="button"></button>
+      <div class="seg" id="viewToggle" role="group">
+        <button type="button" data-view="timeline"></button>
+        <button type="button" data-view="calendar"></button>
+      </div>
       <div class="seg" id="fmtToggle" role="group">
         <button type="button" data-fmt="dmy">DD/MM</button>
         <button type="button" data-fmt="mdy">MM/DD</button>
@@ -60,6 +69,18 @@
   <button class="fab" id="addDayFab" type="button" aria-expanded="false">
     <span class="fab-plus">+</span><span class="fab-label"></span>
   </button>
+</div>
+
+<!-- trip library -->
+<div class="modal-backdrop hidden" id="tripsModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tripsTitle">
+    <h2 id="tripsTitle"></h2>
+    <ul class="trip-list" id="tripList"></ul>
+    <div class="modal-actions">
+      <button class="cancel-btn" id="tripsClose" type="button"></button>
+      <button class="confirm-btn" id="tripNew" type="button"></button>
+    </div>
+  </div>
 </div>
 
 <!-- share sheet -->
@@ -89,9 +110,12 @@
 <script src="js/store.js"></script>
 <script src="js/datefield.js"></script>
 <script src="js/dnd.js"></script>
+<script src="js/calendar.js"></script>
 <script src="js/view.js"></script>
 <script src="js/pdf.js"></script>
 <script src="js/share.js"></script>
+<script src="js/ics.js"></script>
+<script src="js/trips.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

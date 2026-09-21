@@ -47,13 +47,30 @@
     renderLegend();
     view.timelineEl.innerHTML = "";
 
-    if (store.state.days.length === 0) {
+    if (store.view() === "calendar") {
+      view.timelineEl.classList.add("as-calendar");
+      TT.calendar.render(view.timelineEl, function (dayId) {
+        store.setView("timeline");
+        const d = store.dayOf(dayId);
+        if (d) d.collapsed = false;
+        store.save();
+        TT.app.refresh();
+        const el = document.querySelector('[data-day-id="' + dayId + '"]');
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      fabWrap.classList.toggle("hidden", view.readOnly);
+      fabBtn.querySelector(".fab-label").textContent = TT.t("btn.addDay");
+      return;
+    }
+    view.timelineEl.classList.remove("as-calendar");
+
+    if (store.days().length === 0) {
       const empty = TT.el("div", "timeline-empty");
       empty.appendChild(TT.el("strong", null, TT.t("empty.title")));
       empty.appendChild(document.createTextNode(TT.t("empty.body")));
       view.timelineEl.appendChild(empty);
     } else {
-      store.state.days.forEach(function (day) { view.timelineEl.appendChild(renderDay(day)); });
+      store.days().forEach(function (day) { view.timelineEl.appendChild(renderDay(day)); });
     }
 
     fabWrap.classList.toggle("hidden", view.readOnly);
@@ -100,8 +117,22 @@
     const doneCount = day.plans.filter(function (p) { return p.done; }).length;
     if (day.plans.length && doneCount === day.plans.length) row.classList.add("all-done");
 
+    if (day.collapsed) row.classList.add("collapsed");
+
+    // the rail dot doubles as the collapse control
     const rail = TT.el("div", "rail");
-    rail.appendChild(TT.el("span", "dot"));
+    const toggle = TT.el("button", "rail-toggle");
+    toggle.type = "button";
+    toggle.setAttribute("aria-expanded", String(!day.collapsed));
+    toggle.title = TT.t(day.collapsed ? "day.expand" : "day.collapse");
+    toggle.setAttribute("aria-label", toggle.title);
+    toggle.appendChild(TT.el("span", "dot"));
+    toggle.addEventListener("click", function () {
+      day.collapsed = !day.collapsed;
+      store.save();
+      view.render();
+    });
+    rail.appendChild(toggle);
     row.appendChild(rail);
 
     const content = TT.el("div", "day-content");
@@ -145,7 +176,7 @@
           value: day.date,
           onCommit: function (iso) {
             if (iso !== day.date) {
-              const clash = store.state.days.some(function (x) { return x.id !== day.id && x.date === iso; });
+              const clash = store.days().some(function (x) { return x.id !== day.id && x.date === iso; });
               if (clash) { TT.toast(TT.t("date.taken", { date: TT.shortDate(iso) }), true); view.render(); return; }
               day.date = iso;
               store.save();
@@ -182,7 +213,7 @@
       delDay.addEventListener("click", function () {
         if (day.plans.some(function (p) { return p.text; }) && !confirm(TT.t("confirm.removeDay"))) return;
         // the date leaves the trip with the day; the remaining days keep their own dates
-        store.state.days = store.state.days.filter(function (x) { return x.id !== day.id; });
+        store.trip().days = store.days().filter(function (x) { return x.id !== day.id; });
         store.save();
         view.render();
       });
@@ -190,6 +221,21 @@
     }
     head.appendChild(tools);
     content.appendChild(head);
+
+    if (day.collapsed) {
+      const summary = TT.el("button", "day-summary");
+      summary.type = "button";
+      summary.textContent = TT.t("day.planCount", { n: day.plans.length });
+      summary.title = TT.t("day.expand");
+      summary.addEventListener("click", function () {
+        day.collapsed = false;
+        store.save();
+        view.render();
+      });
+      content.appendChild(summary);
+      row.appendChild(content);
+      return row;
+    }
 
     const list = TT.el("div", "plans" + (day.plans.length ? "" : " is-empty"));
     list.dataset.dayId = day.id;
@@ -311,7 +357,7 @@
       remove.title = TT.t("plan.remove");
       remove.setAttribute("aria-label", TT.t("plan.remove"));
       remove.addEventListener("click", function () {
-        store.state.days.forEach(function (d) {
+        store.days().forEach(function (d) {
           d.plans = d.plans.filter(function (p) { return p.id !== plan.id; });
         });
         store.save();
@@ -349,11 +395,11 @@
     }
 
     function addDay(iso) {
-      if (store.state.days.some(function (d) { return d.date === iso; })) {
+      if (store.days().some(function (d) { return d.date === iso; })) {
         TT.toast(TT.t("date.taken", { date: TT.shortDate(iso) }), true);
         return;
       }
-      store.state.days.push({ id: TT.uid(), date: iso, plans: [store.newPlan(), store.newPlan()] });
+      store.days().push(store.newDay(iso));
       store.save();
       closeAddDay();
       view.render();

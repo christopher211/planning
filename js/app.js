@@ -8,6 +8,18 @@
   const fmtToggle = document.getElementById("fmtToggle");
   const langToggle = document.getElementById("langToggle");
   const banner = document.getElementById("banner");
+  const viewToggle = document.getElementById("viewToggle");
+  const collapseBtn = document.getElementById("collapseBtn");
+
+  /** The button offers whichever action would change the most days. */
+  function allCollapsed() {
+    const days = store.days();
+    return days.length > 0 && days.every(function (d) { return d.collapsed; });
+  }
+  function paintCollapseBtn() {
+    collapseBtn.textContent = TT.t(allCollapsed() ? "btn.expandAll" : "btn.collapseAll");
+    collapseBtn.classList.toggle("hidden", store.view() === "calendar" || !store.days().length);
+  }
 
   // ---------- static labels ----------
   function paintChrome() {
@@ -16,6 +28,9 @@
     document.getElementById("title2").textContent = TT.t("title.2");
     document.getElementById("tagline").textContent = TT.t("tagline");
     document.getElementById("shareBtn").textContent = TT.t("btn.share");
+    const icsBtn = document.getElementById("icsBtn");
+    icsBtn.textContent = TT.t("btn.calendarExport");
+    icsBtn.title = TT.t("btn.calendarExport.title");
     document.getElementById("openBtn").textContent = TT.t("btn.openPdf");
     document.getElementById("resetBtn").textContent = TT.t("btn.clearAll");
     document.getElementById("exportBtn").textContent = TT.t("btn.exportPdf");
@@ -35,6 +50,15 @@
     document.getElementById("shareCopy").textContent = TT.t("share.copy");
     document.getElementById("shareClose").textContent = TT.t("btn.close");
 
+    document.getElementById("tripsTitle").textContent = TT.t("trip.title");
+    document.getElementById("tripsClose").textContent = TT.t("btn.close");
+    document.getElementById("tripNew").textContent = TT.t("trip.new");
+    viewToggle.querySelector('[data-view="timeline"]').textContent = TT.t("view.timeline");
+    viewToggle.querySelector('[data-view="calendar"]').textContent = TT.t("view.calendar");
+    viewToggle.setAttribute("aria-label", TT.t("view.label"));
+    paintCollapseBtn();
+    TT.trips.paintButton();
+
     document.getElementById("bannerSave").textContent = TT.t("banner.save");
     document.getElementById("bannerLeave").textContent = TT.t("banner.leave");
 
@@ -51,11 +75,16 @@
     langToggle.querySelectorAll("button").forEach(function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
     });
+    const v = store.view();
+    viewToggle.querySelectorAll("button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.view === v));
+    });
   };
   // kept for pdf.js, which re-syncs after an import
   app.syncFormatToggle = app.syncToggles;
 
   function redraw() { paintChrome(); TT.view.render(); }
+  app.refresh = redraw;
 
   // ---------- shared links ----------
   let sharedMode = null;
@@ -63,8 +92,14 @@
   function enterShared(data) {
     sharedMode = data.mode;
     store.ephemeral = true;
-    delete data.mode;
-    store.state = data;
+    // keep the viewer's own library intact; show the shared trip on its own
+    const shown = store.normalizeTrip({ name: data.name, days: data.days });
+    store.state = {
+      v: 2, updatedAt: Date.now(),
+      settings: { dateFormat: data.dateFormat, lang: data.lang, view: "timeline" },
+      activeTripId: shown.id,
+      trips: [shown]
+    };
 
     TT.view.readOnly = sharedMode === "view";
     document.body.classList.toggle("read-only", TT.view.readOnly);
@@ -76,7 +111,13 @@
 
   function leaveShared(keep) {
     if (keep) {
+      const shown = store.trip();
       store.ephemeral = false;
+      const mine = store.load() || store.defaultState();
+      // adopt the shared trip into the viewer's own library
+      mine.trips.push(shown);
+      mine.activeTripId = shown.id;
+      store.state = mine;
       store.save();
       TT.toast(TT.t("banner.saved"));
     } else {
@@ -143,6 +184,25 @@
     redraw();
   });
 
+  // ---------- view, collapse, trips, calendar file ----------
+  viewToggle.addEventListener("click", function (e) {
+    const btn = e.target.closest("button[data-view]");
+    if (!btn || btn.dataset.view === store.view()) return;
+    store.setView(btn.dataset.view);
+    redraw();
+  });
+
+  collapseBtn.addEventListener("click", function () {
+    store.setAllCollapsed(!allCollapsed());
+    redraw();
+  });
+
+  document.getElementById("icsBtn").addEventListener("click", function () {
+    TT.ics.download(store.trip());
+  });
+
+  TT.trips.mount(redraw);
+
   // ---------- timeline-wide sort ----------
   document.getElementById("sortDateBtn").addEventListener("click", function () {
     const changed = store.sortWholeTimeline();
@@ -154,9 +214,9 @@
   // ---------- clear ----------
   document.getElementById("resetBtn").addEventListener("click", function () {
     if (!confirm(TT.t("confirm.clearAll"))) return;
-    store.state.days = [];
+    store.trip().days = [];
     store.save();
-    TT.view.render();
+    redraw();
   });
 
   // ---------- PDF in / out ----------
