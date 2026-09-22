@@ -108,6 +108,42 @@ body.sidebar-closed .sidebar { display: none; }
 .side-foot { margin-top: auto; }
 .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
+/* ---------- buttons and the segmented pill toggle ---------- */
+.open-btn {
+  background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 8px;
+  padding: 0.45rem 0.7rem; font-family: inherit; font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+}
+.open-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.export-btn {
+  background: var(--accent); color: var(--paper); border: none; border-radius: 8px;
+  padding: 0.5rem 0.8rem; font-family: inherit; font-size: 0.82rem; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+}
+.export-btn:hover { filter: brightness(1.06); }
+.export-btn:disabled { opacity: 0.6; cursor: wait; }
+.reset-btn {
+  background: none; border: none; color: var(--ink-soft); font-family: inherit; font-size: 0.8rem;
+  cursor: pointer; padding: 0.3rem 0; white-space: nowrap;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line);
+}
+.reset-btn:hover { color: var(--danger); text-decoration-color: var(--danger); }
+
+/* one pill, split into segments — the selected one carries the accent */
+.seg {
+  display: inline-flex; border: 1px solid var(--chip-line); border-radius: 999px;
+  overflow: hidden; background: var(--chip-bg); flex-shrink: 0;
+}
+.seg button {
+  background: none; border: none; font-family: inherit; font-size: 0.72rem; font-weight: 500;
+  color: var(--ink-soft); padding: 0 0.7rem; height: 28px; cursor: pointer;
+  letter-spacing: 0.02em; white-space: nowrap;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--paper); }
+.seg button:not([aria-pressed="true"]):hover { color: var(--ink); background: var(--accent-soft); }
+.side-group .seg { width: 100%; }
+.side-group .seg button { flex: 1 1 0; }
+
+
 /* flag legend, stacked down the sidebar */
 .legend { display: flex; flex-direction: column; gap: 0.45rem; list-style: none; margin: 0; padding: 0; width: 100%; }
 .legend li { display: flex; align-items: flex-start; gap: 0.4rem; font-size: 0.72rem; line-height: 1.35; color: var(--ink-soft); }
@@ -144,7 +180,8 @@ body.sidebar-closed .sidebar { display: none; }
 /* above the line: the date, centred over the dot */
 .node-head {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  gap: 0.25rem; padding-bottom: 0.5rem; min-height: 3.1rem; text-align: center;
+  gap: 0.25rem; padding-bottom: 0.5rem; text-align: center;
+  height: 3.6rem; overflow: hidden;   /* fixed, so every dot sits on the same line */
 }
 .date-btn {
   background: none; border: none; font-family: "Fraunces", Georgia, serif; font-weight: 500;
@@ -164,6 +201,17 @@ body.sidebar-closed .sidebar { display: none; }
   border-top: 2px solid var(--line);
 }
 .day:first-child .node-axis::before { left: calc(-1 * var(--board-pad)); }
+.day:last-child .node-axis::before { right: calc(-0.5 * var(--board-gap)); }
+
+/* The axis carries on past the final day to the edge of the board, so a short
+   trip doesn't leave the line stopping in mid-air. Once the days overflow the
+   viewport this collapses to nothing and adds no scrollable width. */
+.day-tail {
+  flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; pointer-events: none;
+}
+.day-tail .node-axis::before {
+  left: calc(-0.5 * var(--board-gap)); right: calc(-1 * var(--board-pad));
+}
 .day:last-child  .node-axis::before { right: calc(-1 * var(--board-pad)); }
 
 .dot-handle {

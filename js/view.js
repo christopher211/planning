@@ -78,6 +78,12 @@
       view.timelineEl.appendChild(empty);
     } else {
       store.days().forEach(function (day) { view.timelineEl.appendChild(renderDay(day)); });
+      // a flexible tail so the axis runs to the edge of the viewport when the
+      // trip is too short to fill it; it collapses to nothing once days overflow
+      const tail = TT.el("div", "day-tail");
+      tail.appendChild(TT.el("div", "node-head"));
+      tail.appendChild(TT.el("div", "node-axis"));
+      view.timelineEl.appendChild(tail);
     }
 
     fabWrap.classList.toggle("hidden", view.readOnly);
