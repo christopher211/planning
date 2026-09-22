@@ -43,6 +43,10 @@
     document.getElementById("sideLegend").textContent = TT.t("side.legend");
     document.getElementById("sidebarBtn").title = TT.t("side.toggle");
     document.getElementById("sidebarBtn").setAttribute("aria-label", TT.t("side.toggle"));
+    document.getElementById("dayModalClose").textContent = TT.t("btn.close");
+    document.getElementById("dayModalAdd").textContent = TT.t("btn.add");
+    document.getElementById("dayModalSort").textContent = TT.t("btn.sortByTime");
+    document.getElementById("dayModalDelete").title = TT.t("day.remove");
     document.getElementById("tripsTitle").textContent = TT.t("trip.title");
     document.getElementById("tripsClose").textContent = TT.t("btn.close");
     document.getElementById("tripNew").textContent = TT.t("trip.new");

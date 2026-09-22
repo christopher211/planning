@@ -241,11 +241,22 @@
     return row;
   }
 
-  function renderPlan(plan) {
+  /** One editable plan row. `opts.draggable` adds the grip; `opts.onChanged`
+   *  says what to repaint when the row is ticked or deleted. */
+  view.planRow = function (plan, opts) {
+    opts = opts || {};
+    const draggable = opts.draggable !== false && !view.readOnly;
+    const changed = opts.onChanged || view.render;
+    return buildPlanRow(plan, draggable, changed);
+  };
+
+  function renderPlan(plan) { return buildPlanRow(plan, !view.readOnly, view.render); }
+
+  function buildPlanRow(plan, draggable, changed) {
     const row = TT.el("div", "plan-row" + (plan.done ? " done" : "") + " pri-" + plan.priority);
     row.dataset.planId = plan.id;
 
-    if (!view.readOnly) {
+    if (draggable) {
       const handle = TT.el("button", "grip");
       handle.type = "button";
       handle.title = TT.t("plan.move.title");
@@ -272,7 +283,7 @@
     check.addEventListener("change", function () {
       plan.done = check.checked;
       store.save();
-      view.render();
+      changed();
     });
     checkCell.appendChild(check);
 
@@ -309,7 +320,7 @@
       row.classList.add("pri-" + plan.priority);
       paintFlag();
       store.save();
-      refreshDayChips(row);
+      if (row.closest(".day")) refreshDayChips(row);
     });
 
     const textCell = TT.el("span", "text-cell");
@@ -340,7 +351,7 @@
           d.plans = d.plans.filter(function (p) { return p.id !== plan.id; });
         });
         store.save();
-        view.render();
+        changed();
       });
       row.appendChild(remove);
     } else {

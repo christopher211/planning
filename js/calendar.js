@@ -47,6 +47,88 @@
 
   function save() { store.save(); }
 
+  const isNarrow = function () { return window.matchMedia("(max-width: 720px)").matches; };
+
+  // ---------- the day editor, used when a cell is too small to edit in ----------
+  let modal, modalBody, modalTitle, modalIso = null;
+
+  function ensureModal() {
+    if (modal) return;
+    modal = document.getElementById("dayModal");
+    modalBody = document.getElementById("dayModalBody");
+    modalTitle = document.getElementById("dayModalTitle");
+    document.getElementById("dayModalClose").addEventListener("click", closeDay);
+    modal.addEventListener("click", function (e) { if (e.target === modal) closeDay(); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) closeDay();
+    });
+    document.getElementById("dayModalAdd").addEventListener("click", function () {
+      const day = dayFor(modalIso) || startDay(modalIso);
+      day.plans.push(store.newPlan());
+      save();
+      paintModal();
+      const areas = modalBody.querySelectorAll(".plan-text");
+      if (areas.length) areas[areas.length - 1].focus();
+    });
+    document.getElementById("dayModalSort").addEventListener("click", function () {
+      const day = dayFor(modalIso);
+      if (!day) return;
+      store.sortDayByTime(day);
+      save();
+      paintModal();
+    });
+    document.getElementById("dayModalDelete").addEventListener("click", function () {
+      const day = dayFor(modalIso);
+      if (!day) return;
+      if (day.plans.some(function (p) { return p.text; }) && !confirm(TT.t("confirm.removeDay"))) return;
+      store.trip().days = store.days().filter(function (x) { return x.id !== day.id; });
+      save();
+      closeDay();
+      TT.app.refresh();
+    });
+  }
+
+  function startDay(iso) {
+    const d = store.newDay(iso, 0);
+    store.days().push(d);
+    store.reindex();
+    return d;
+  }
+
+  function paintModal() {
+    const day = dayFor(modalIso);
+    modalTitle.textContent = TT.lineDate(modalIso);
+    modalBody.innerHTML = "";
+
+    const plans = TT.el("div", "plans");
+    plans.dataset.empty = TT.t("plans.empty");
+    if (day && day.plans.length) {
+      day.plans.forEach(function (p) {
+        plans.appendChild(TT.view.planRow(p, { draggable: false, onChanged: paintModal }));
+      });
+    } else {
+      plans.classList.add("is-empty");
+    }
+    modalBody.appendChild(plans);
+
+    const sortBtn = document.getElementById("dayModalSort");
+    sortBtn.classList.toggle("hidden", !day || day.plans.length < 2);
+    document.getElementById("dayModalDelete").classList.toggle("hidden", !day);
+  }
+
+  cal.openDay = function (iso) {
+    ensureModal();
+    modalIso = iso;
+    paintModal();
+    modal.classList.remove("hidden");
+  };
+
+  function closeDay() {
+    modal.classList.add("hidden");
+    modalIso = null;
+    TT.app.refresh();
+  }
+
   /** Repaint one cell in place; used after any edit that changes its shape. */
   function repaint(cell) {
     const iso = cell.dataset.iso;
@@ -122,7 +204,28 @@
     return li;
   }
 
+  /** On a phone a cell is a tap target that opens the day editor. */
+  function buildCompactCell(iso) {
+    const day = dayFor(iso);
+    const cell = TT.el("button", "cal-cell compact" + (day ? " on" : " empty"));
+    cell.type = "button";
+    cell.dataset.iso = iso;
+    if (iso === TT.toISO(new Date())) cell.classList.add("today");
+    cell.appendChild(TT.el("span", "cal-num", String(Number(iso.slice(8, 10)))));
+    if (day) {
+      const done = day.plans.filter(function (p) { return p.done; }).length;
+      if (day.plans.length && done === day.plans.length) cell.classList.add("all-done");
+      const must = day.plans.some(function (p) { return p.priority === "must" && !p.done; });
+      const badge = TT.el("span", "cal-count" + (must ? " must" : ""), String(day.plans.length));
+      cell.appendChild(badge);
+    }
+    cell.title = TT.longDate(iso);
+    if (!TT.view.readOnly) cell.addEventListener("click", function () { cal.openDay(iso); });
+    return cell;
+  }
+
   function buildCell(iso) {
+    if (isNarrow()) return buildCompactCell(iso);
     const day = dayFor(iso);
     const dayNum = Number(iso.slice(8, 10));
     const cell = TT.el("div", "cal-cell" + (day ? " on" : " empty"));
