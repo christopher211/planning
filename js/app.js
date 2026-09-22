@@ -9,17 +9,6 @@
   const langToggle = document.getElementById("langToggle");
   const banner = document.getElementById("banner");
   const viewToggle = document.getElementById("viewToggle");
-  const collapseBtn = document.getElementById("collapseBtn");
-
-  /** The button offers whichever action would change the most days. */
-  function allCollapsed() {
-    const days = store.days();
-    return days.length > 0 && days.every(function (d) { return d.collapsed; });
-  }
-  function paintCollapseBtn() {
-    collapseBtn.textContent = TT.t(allCollapsed() ? "btn.expandAll" : "btn.collapseAll");
-    collapseBtn.classList.toggle("hidden", store.view() === "calendar" || !store.days().length);
-  }
 
   // ---------- static labels ----------
   function paintChrome() {
@@ -60,7 +49,6 @@
     viewToggle.querySelector('[data-view="timeline"]').textContent = TT.t("view.timeline");
     viewToggle.querySelector('[data-view="calendar"]').textContent = TT.t("view.calendar");
     viewToggle.setAttribute("aria-label", TT.t("view.label"));
-    paintCollapseBtn();
     TT.trips.paintButton();
 
     document.getElementById("bannerSave").textContent = TT.t("banner.save");
@@ -216,11 +204,6 @@
     const btn = e.target.closest("button[data-view]");
     if (!btn || btn.dataset.view === store.view()) return;
     store.setView(btn.dataset.view);
-    redraw();
-  });
-
-  collapseBtn.addEventListener("click", function () {
-    store.setAllCollapsed(!allCollapsed());
     redraw();
   });
 

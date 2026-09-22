@@ -65,6 +65,11 @@ window.TT = window.TT || {};
   TT.headingDate = function (iso) {
     return TT.parseLocalDate(iso).toLocaleDateString(TT.locale(), { weekday: "short", month: "short", day: "numeric" });
   };
+  /** "Tue, Dec 01, 2026" — the label that sits above the line. */
+  TT.lineDate = function (iso) {
+    return TT.parseLocalDate(iso).toLocaleDateString(TT.locale(),
+      { weekday: "short", month: "short", day: "2-digit", year: "numeric" });
+  };
   TT.formatTime = function (t) {
     if (!t) return "";
     const parts = t.split(":").map(Number);

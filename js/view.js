@@ -1,4 +1,9 @@
-/* Rendering: the legend, the timeline, each day section and each plan row. */
+/* Rendering: the legend, the timeline, each day node and each plan row.
+ *
+ * The timeline is a single horizontal line running left to right. Each day is
+ * a node on it: the date sits above the line, a dot marks the day, and the
+ * plans hang below. The dot is also the day's drag handle.
+ */
 (function (TT) {
   "use strict";
 
@@ -52,19 +57,19 @@
       document.getElementById("boardHint").textContent = "";
       TT.calendar.render(view.timelineEl, function (dayId) {
         store.setView("timeline");
-        const d = store.dayOf(dayId);
-        if (d) d.collapsed = false;
         store.save();
         TT.app.refresh();
         const el = document.querySelector('[data-day-id="' + dayId + '"]');
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       });
       fabWrap.classList.toggle("hidden", view.readOnly);
       fabBtn.querySelector(".fab-label").textContent = TT.t("btn.addDay");
       return;
     }
+
     view.timelineEl.classList.remove("as-calendar");
-    document.getElementById("boardHint").textContent = store.days().length > 1 ? TT.t("board.hint") : "";
+    document.getElementById("boardHint").textContent =
+      store.days().length > 1 && !view.readOnly ? TT.t("board.hint") : "";
 
     if (store.days().length === 0) {
       const empty = TT.el("div", "timeline-empty");
@@ -119,58 +124,14 @@
     const doneCount = day.plans.filter(function (p) { return p.done; }).length;
     if (day.plans.length && doneCount === day.plans.length) row.classList.add("all-done");
 
-    if (day.collapsed) row.classList.add("collapsed");
-
-    // the rail dot doubles as the collapse control
-    const rail = TT.el("div", "rail");
-    const toggle = TT.el("button", "rail-toggle");
-    toggle.type = "button";
-    toggle.setAttribute("aria-expanded", String(!day.collapsed));
-    toggle.title = TT.t(day.collapsed ? "day.expand" : "day.collapse");
-    toggle.setAttribute("aria-label", toggle.title);
-    toggle.appendChild(TT.el("span", "dot"));
-    toggle.addEventListener("click", function () {
-      day.collapsed = !day.collapsed;
-      store.save();
-      view.render();
-    });
-    rail.appendChild(toggle);
-    row.appendChild(rail);
-
-    const content = TT.el("div", "day-content");
-    const head = TT.el("div", "day-head");
-
-    if (!view.readOnly) {
-      const grip = TT.el("button", "grip day-grip");
-      grip.type = "button";
-      grip.title = TT.t("day.move.title");
-      grip.setAttribute("aria-label", TT.t("day.move"));
-      grip.innerHTML = TT.ICON.grip;
-      grip.addEventListener("pointerdown", function (e) { TT.dnd.start(e, row, "day"); });
-      grip.addEventListener("keydown", function (e) {
-        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-          e.preventDefault();
-          TT.dnd.moveDayByKey(day.id, e.key === "ArrowUp" ? -1 : 1);
-        }
-      });
-      head.appendChild(grip);
-    } else {
-      head.appendChild(TT.el("span", "grip-spacer"));
-    }
-
-    const main = TT.el("div", "day-main");
+    // ----- above the line: the date, then its chips -----
+    const head = TT.el("div", "node-head");
     const dateBtn = TT.el("button", "date-btn");
     dateBtn.type = "button";
     dateBtn.title = TT.t("day.changeDate");
     dateBtn.disabled = view.readOnly;
-    if (day.date) {
-      const d = TT.parseLocalDate(day.date);
-      dateBtn.appendChild(document.createTextNode(TT.headingDate(day.date)));
-      dateBtn.appendChild(TT.el("span", "year", String(d.getFullYear())));
-    } else {
-      dateBtn.textContent = TT.t("day.setDate");
-    }
-    main.appendChild(dateBtn);
+    dateBtn.textContent = day.date ? TT.lineDate(day.date) : TT.t("day.setDate");
+    head.appendChild(dateBtn);
 
     if (!view.readOnly) {
       dateBtn.addEventListener("click", function () {
@@ -192,7 +153,34 @@
       });
     }
 
-    head.appendChild(main);
+    const chips = TT.el("div", "day-chips");
+    dayChips(day).forEach(function (c) { chips.appendChild(c); });
+    head.appendChild(chips);
+    row.appendChild(head);
+
+    // ----- the line itself, with the day's dot on it -----
+    const axis = TT.el("div", "node-axis");
+    if (view.readOnly) {
+      axis.appendChild(TT.el("span", "dot"));
+    } else {
+      const dot = TT.el("button", "dot-handle");
+      dot.type = "button";
+      dot.title = TT.t("day.dragDot");
+      dot.setAttribute("aria-label", TT.t("day.move"));
+      dot.appendChild(TT.el("span", "dot"));
+      dot.addEventListener("pointerdown", function (e) { TT.dnd.start(e, row, "day"); });
+      dot.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          e.preventDefault();
+          TT.dnd.moveDayByKey(day.id, e.key === "ArrowLeft" ? -1 : 1);
+        }
+      });
+      axis.appendChild(dot);
+    }
+    row.appendChild(axis);
+
+    // ----- below the line: tools, plans, add -----
+    const content = TT.el("div", "day-content");
 
     const tools = TT.el("div", "day-tools");
     if (!view.readOnly) {
@@ -220,27 +208,7 @@
       });
       tools.appendChild(delDay);
     }
-    head.appendChild(tools);
-    content.appendChild(head);
-
-    const chips = TT.el("div", "day-chips");
-    dayChips(day).forEach(function (c) { chips.appendChild(c); });
-    content.appendChild(chips);
-
-    if (day.collapsed) {
-      const summary = TT.el("button", "day-summary");
-      summary.type = "button";
-      summary.textContent = TT.t(day.plans.length === 1 ? "day.planCount.one" : "day.planCount", { n: day.plans.length });
-      summary.title = TT.t("day.expand");
-      summary.addEventListener("click", function () {
-        day.collapsed = false;
-        store.save();
-        view.render();
-      });
-      content.appendChild(summary);
-      row.appendChild(content);
-      return row;
-    }
+    content.appendChild(tools);
 
     const list = TT.el("div", "plans" + (day.plans.length ? "" : " is-empty"));
     list.dataset.dayId = day.id;
@@ -409,7 +377,7 @@
       closeAddDay();
       view.render();
       const added = document.querySelector('[data-day-id]:last-of-type');
-      if (added) added.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (added) added.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
 
     const field = TT.DateField({

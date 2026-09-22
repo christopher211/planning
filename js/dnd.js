@@ -307,7 +307,7 @@
 
     const moved = store.dayOf(dayId);
     if (changed && moved) TT.toast(TT.t("toast.movedToShort", { date: TT.shortDate(moved.date) }));
-    const g = document.querySelector('[data-day-id="' + dayId + '"] .day-grip');
+    const g = document.querySelector('[data-day-id="' + dayId + '"] .dot-handle');
     if (g) { g.focus(); scrollColumnIntoView(g); }
   };
 

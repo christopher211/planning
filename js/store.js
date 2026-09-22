@@ -25,7 +25,7 @@
       const plans = [];
       const n = planCount == null ? 2 : planCount;
       for (let i = 0; i < n; i++) plans.push(Store.newPlan());
-      return { id: TT.uid(), date: iso, collapsed: false, plans: plans };
+      return { id: TT.uid(), date: iso, plans: plans };
     },
 
     /** A fresh trip opens on today and tomorrow with blank slots. */
@@ -60,7 +60,6 @@
         return {
           id: d.id || TT.uid(),
           date: d.date || "",
-          collapsed: !!d.collapsed,
           plans: (d.plans || []).map(function (p) {
             return {
               id: p.id || TT.uid(),
@@ -286,11 +285,6 @@
       Store.reindex();
       Store.days().forEach(Store.sortDayByTime);
       return before !== snap();
-    },
-
-    setAllCollapsed: function (collapsed) {
-      Store.days().forEach(function (d) { d.collapsed = collapsed; });
-      Store.save();
     },
 
     // ---------- settings ----------

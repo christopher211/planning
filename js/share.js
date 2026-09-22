@@ -80,19 +80,15 @@
     return p;
   }
 
-  /** [date, collapsed, plans[]] — collapsed trimmed when false and no plans. */
+  /** [date, 0, plans[]] — the middle slot is a retired "collapsed" flag, kept
+   *  so links made by older versions still decode. */
   function packDay(d) {
-    const row = [packDate(d.date), d.collapsed ? 1 : 0, d.plans.map(packPlan)];
-    if (!row[2].length && !row[1]) row.length = 1;
+    const row = [packDate(d.date), 0, d.plans.map(packPlan)];
+    if (!row[2].length) row.length = 1;
     return row;
   }
   function unpackDay(row) {
-    return {
-      id: TT.uid(),
-      date: unpackDate(row[0]),
-      collapsed: !!row[1],
-      plans: (row[2] || []).map(unpackPlan)
-    };
+    return { id: TT.uid(), date: unpackDate(row[0]), plans: (row[2] || []).map(unpackPlan) };
   }
 
   /** @param mode "view" | "edit" */

@@ -9,11 +9,12 @@
 
   const STRINGS = {
     en: {
+      "day.dragDot": "Drag this day along the line to reshuffle it (or use \u2190 \u2192 keys)",
       "side.actions": "Actions",
       "side.format": "Format",
       "side.legend": "Flags",
       "side.toggle": "Show or hide the sidebar",
-      "board.hint": "Scroll sideways \u2192 drag a day by its grip to reshuffle",
+      "board.hint": "Scroll sideways \u2192 drag a day by its dot to reshuffle",
       "drag.dayHint": "Dates stay in order \u2014 this day's plans move into the slot you drop it on",
       "cal.startDay": "+ start this day",
       "cal.openInTimeline": "Open in the timeline",
@@ -33,12 +34,6 @@
       "trip.noDates": "no dates yet",
       "trip.counts": "{days} days \u00B7 {done}/{total} done",
 
-      "day.collapse": "Collapse this day",
-      "day.expand": "Expand this day",
-      "day.planCount": "{n} plans",
-      "day.planCount.one": "1 plan",
-      "btn.collapseAll": "collapse all",
-      "btn.expandAll": "expand all",
 
       "view.timeline": "Timeline",
       "view.calendar": "Calendar",
@@ -149,15 +144,15 @@
     },
 
     vi: {
+      "day.dragDot": "K\u00E9o ng\u00E0y n\u00E0y d\u1ECDc theo \u0111\u01B0\u1EDDng \u0111\u1EC3 s\u1EAFp l\u1EA1i (ho\u1EB7c d\u00F9ng ph\u00EDm \u2190 \u2192)",
       "side.actions": "Thao t\u00E1c",
       "side.format": "\u0110\u1ECBnh d\u1EA1ng",
       "side.legend": "\u0110\u00E1nh d\u1EA5u",
       "side.toggle": "\u1EA8n ho\u1EB7c hi\u1EC7n thanh b\u00EAn",
-      "board.hint": "Cu\u1ED9n ngang \u2192 k\u00E9o tay c\u1EA7m \u0111\u1EC3 s\u1EAFp l\u1EA1i ng\u00E0y",
+      "board.hint": "Cu\u1ED9n ngang \u2192 k\u00E9o ch\u1EA5m tr\u00F2n \u0111\u1EC3 s\u1EAFp l\u1EA1i ng\u00E0y",
       "drag.dayHint": "Ng\u00E0y th\u00E1ng v\u1EABn \u0111\u00FAng th\u1EE9 t\u1EF1 \u2014 c\u00E1c vi\u1EC7c c\u1EE7a ng\u00E0y n\u00E0y s\u1EBD chuy\u1EC3n v\u00E0o v\u1ECB tr\u00ED b\u1EA1n th\u1EA3",
       "cal.startDay": "+ b\u1EAFt \u0111\u1EA7u ng\u00E0y n\u00E0y",
       "cal.openInTimeline": "M\u1EDF trong d\u00F2ng th\u1EDDi gian",
-      "day.planCount.one": "1 vi\u1EC7c",
       "trip.untitled": "Chuy\u1EBFn \u0111i ch\u01B0a \u0111\u1EB7t t\u00EAn",
       "trip.newName": "\u0110\u1EB7t t\u00EAn cho chuy\u1EBFn \u0111i m\u1EDBi",
       "trip.renameTitle": "\u0110\u1ED5i t\u00EAn chuy\u1EBFn \u0111i",
@@ -174,11 +169,6 @@
       "trip.noDates": "ch\u01B0a c\u00F3 ng\u00E0y",
       "trip.counts": "{days} ng\u00E0y \u00B7 {done}/{total} xong",
 
-      "day.collapse": "Thu g\u1ECDn ng\u00E0y n\u00E0y",
-      "day.expand": "M\u1EDF r\u1ED9ng ng\u00E0y n\u00E0y",
-      "day.planCount": "{n} vi\u1EC7c",
-      "btn.collapseAll": "thu g\u1ECDn t\u1EA5t c\u1EA3",
-      "btn.expandAll": "m\u1EDF r\u1ED9ng t\u1EA5t c\u1EA3",
 
       "view.timeline": "D\u00F2ng th\u1EDDi gian",
       "view.calendar": "L\u1ECBch",

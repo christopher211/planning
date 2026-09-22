@@ -12,8 +12,8 @@
 
   /* every row in a day lines up on these columns */
   --row-h: 32px; --col-grip: 24px; --col-check: 24px; --col-flag: 28px; --col-x: 28px;
-  --col-w: 310px;            /* one day on the board */
-  --col-w-collapsed: 148px;
+  --col-w: 290px;            /* one day on the timeline */
+  --board-gap: 0.7rem; --board-pad: 0.9rem;
   --sidebar-w: 236px;
 
   color-scheme: light dark;
@@ -61,10 +61,12 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
 h1 { font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 1.15rem; letter-spacing: -0.01em; margin: 0; white-space: nowrap; }
 h1 em { font-style: italic; color: var(--accent); }
 .icon-toggle {
-  background: none; border: 1px solid var(--line); color: var(--ink-soft); cursor: pointer;
-  width: 34px; height: 30px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  background: var(--accent-soft); border: none; color: var(--accent); cursor: pointer;
+  height: 32px; padding: 0 0.8rem; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-.icon-toggle:hover { color: var(--accent); border-color: var(--accent); }
+.icon-toggle:hover { filter: brightness(1.08); }
+.icon-toggle[aria-expanded="true"] { background: var(--accent); color: var(--paper); }
 .icon-toggle svg { width: 16px; height: 16px; }
 
 /* ---------- shell: board + sidebar ---------- */
@@ -81,8 +83,8 @@ h1 em { font-style: italic; color: var(--accent); }
 /* the days run left to right; the page itself never scrolls */
 .board {
   flex: 1 1 auto; min-height: 0; overflow-x: auto; overflow-y: hidden;
-  display: flex; align-items: stretch; gap: 0.7rem;
-  padding: 0 max(0.9rem, env(safe-area-inset-right, 0px)) 1rem max(0.9rem, env(safe-area-inset-left, 0px));
+  display: flex; align-items: stretch; gap: var(--board-gap);
+  padding: 0 max(var(--board-pad), env(safe-area-inset-right, 0px)) 1rem max(var(--board-pad), env(safe-area-inset-left, 0px));
   scroll-padding-left: 0.9rem;
 }
 .board.as-calendar { overflow-y: auto; align-items: flex-start; }
@@ -128,7 +130,7 @@ body.sidebar-closed .sidebar { display: none; }
 .chip.on { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 .chip.must { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
 
-/* ---------- a day is a column on the board ---------- */
+/* ---------- a day is a node on one long horizontal line ---------- */
 .timeline-empty {
   align-self: center; padding: 2rem; color: var(--ink-soft); font-size: 0.95rem; max-width: 26rem;
 }
@@ -136,43 +138,59 @@ body.sidebar-closed .sidebar { display: none; }
 
 .day {
   flex: 0 0 var(--col-w); width: var(--col-w);
-  display: flex; flex-direction: column; min-height: 0; position: relative;
-  border: 1px solid var(--line); border-radius: 12px; background: var(--paper-raised);
-  padding: 0.5rem 0.6rem 0.6rem;
+  display: flex; flex-direction: column; min-height: 0;
 }
-.day.collapsed { flex-basis: var(--col-w-collapsed); width: var(--col-w-collapsed); }
-.day.all-done { border-style: dashed; }
 
-/* the rail is now horizontal: a dot per column, sitting on a dashed line */
-.day::before {
-  content: ""; position: absolute; left: 0; right: 0; top: 16px;
-  border-top: 2px dashed var(--line); z-index: 0;
+/* above the line: the date, centred over the dot */
+.node-head {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  gap: 0.25rem; padding-bottom: 0.5rem; min-height: 3.1rem; text-align: center;
 }
-.day:first-child::before { left: 50%; }
-.day:last-child::before { right: 50%; }
-.rail { position: relative; z-index: 1; display: flex; justify-content: center; padding: 0 0 0.35rem; }
-.dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 3px solid var(--paper-raised); }
-.day.all-done .dot { background: var(--paper-raised); box-shadow: inset 0 0 0 2px var(--accent); }
-
-.day-content { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
-.day-head {
-  display: grid; grid-template-columns: var(--col-grip) minmax(0, 1fr) auto;
-  column-gap: 0.35rem; align-items: center; min-height: 32px;
-}
-.day-main { display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
-.day-chips {
-  display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap;
-  padding: 0 0 0.3rem calc(var(--col-grip) + 0.35rem); min-height: 0;
-}
-.day-chips:empty { display: none; }
 .date-btn {
-  background: none; border: none; font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 1rem;
-  line-height: 1.15; color: var(--ink); cursor: pointer; padding: 0.12rem 0.1rem; margin-left: -0.1rem;
-  border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;
+  background: none; border: none; font-family: "Fraunces", Georgia, serif; font-weight: 500;
+  font-size: 1.02rem; line-height: 1.2; color: var(--ink); cursor: pointer;
+  padding: 0.15rem 0.4rem; border-radius: 7px; white-space: nowrap;
 }
 .date-btn:hover { background: var(--chip-bg); }
-.date-btn .year { font-family: "Work Sans", sans-serif; font-size: 0.68rem; font-weight: 500; line-height: 1; color: var(--ink-soft); }
-.day-tools { display: flex; align-items: center; gap: 0.1rem; }
+.date-btn:disabled { cursor: default; }
+.day-chips { display: flex; align-items: center; justify-content: center; gap: 0.3rem; flex-wrap: wrap; }
+.day-chips:empty { display: none; }
+
+/* the line, drawn per node and bridged across the gaps so it reads as one */
+.node-axis { position: relative; height: 20px; display: flex; align-items: center; justify-content: center; }
+.node-axis::before {
+  content: ""; position: absolute; top: 50%; height: 0;
+  left: calc(-0.5 * var(--board-gap)); right: calc(-0.5 * var(--board-gap));
+  border-top: 2px solid var(--line);
+}
+.day:first-child .node-axis::before { left: calc(-1 * var(--board-pad)); }
+.day:last-child  .node-axis::before { right: calc(-1 * var(--board-pad)); }
+
+.dot-handle {
+  position: relative; z-index: 1; touch-action: none; cursor: grab;
+  background: none; border: none; padding: 0; width: 26px; height: 20px;
+  display: flex; align-items: center; justify-content: center; border-radius: 999px;
+}
+.dot-handle:active { cursor: grabbing; }
+.dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--paper); box-sizing: content-box;
+}
+.dot-handle:hover .dot { transform: scale(1.18); }
+.dot { transition: transform 140ms ease; }
+.day.all-done .dot { background: var(--paper); box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* below the line: tools, plans, add */
+.day-content {
+  display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto;
+  padding-top: 0.5rem; overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin;
+}
+.day-tools {
+  display: flex; align-items: center; justify-content: flex-end; gap: 0.1rem;
+  min-height: 26px; opacity: 0; transition: opacity 120ms ease;
+}
+.day:hover .day-tools, .day:focus-within .day-tools { opacity: 1; }
 .text-btn {
   background: none; border: none; color: var(--ink-soft); font-family: inherit; font-size: 0.74rem;
   cursor: pointer; padding: 0 0.45rem; height: 26px; border-radius: 999px; white-space: nowrap;
@@ -187,13 +205,10 @@ body.sidebar-closed .sidebar { display: none; }
 }
 .icon-btn:hover { color: var(--danger); background: var(--accent-soft); }
 
-/* plans scroll inside their own column */
-.plans {
-  display: flex; flex-direction: column; min-height: 40px; flex: 1 1 auto;
-  overflow-y: auto; overflow-x: hidden; border-top: 1px dotted var(--line);
-}
-.plans.is-empty { flex: 0 0 auto; min-height: 2.6rem; border: 1px dashed var(--line); border-radius: 8px; }
-.plans.is-empty::after { content: attr(data-empty); font-size: 0.8rem; color: var(--ink-soft); padding: 0.7rem 0.8rem; }
+/* plans scroll inside their own node */
+.plans { display: flex; flex-direction: column; flex: 0 0 auto; }
+.plans.is-empty { flex: 0 0 auto; min-height: 2.4rem; border: 1px dashed var(--line); border-radius: 8px; }
+.plans.is-empty::after { content: attr(data-empty); font-size: 0.78rem; color: var(--ink-soft); padding: 0.6rem 0.7rem; }
 body.dragging .plans.is-empty::after { content: attr(data-empty-drag); }
 
 /* ---------- typed date field ---------- */
@@ -230,14 +245,6 @@ body.dragging .plans.is-empty::after { content: attr(data-empty-drag); }
 .grip:hover { background: var(--accent-soft); color: var(--ink); }
 .grip:active { cursor: grabbing; }
 .grip svg { width: 10px; height: 16px; fill: currentColor; pointer-events: none; }
-.day-grip { color: var(--line); }
-.day-grip:hover { color: var(--accent); }
-
-.plans { display: flex; flex-direction: column; min-height: 6px; border-top: 1px dotted var(--line); }
-.plans.is-empty { min-height: 2.6rem; border: 1px dashed var(--line); border-radius: 8px; }
-.plans.is-empty::after { content: attr(data-empty); font-size: 0.8rem; color: var(--ink-soft); padding: 0.7rem 0.8rem; }
-body.dragging .plans.is-empty::after { content: attr(data-empty-drag); }
-
 /* ---------- plan row: two lines, because a column is narrow ---------- */
 .plan-row {
   display: grid;
@@ -245,9 +252,10 @@ body.dragging .plans.is-empty::after { content: attr(data-empty-drag); }
   grid-template-areas: "h c t   p   x"
                        "h c txt txt x";
   column-gap: 0.3rem; align-items: start;
-  padding: 0.15rem 0; border-bottom: 1px dotted var(--line); background: var(--paper-raised);
+  padding: 0.15rem 0; border-bottom: 1px dotted var(--line); background: var(--paper);
 }
 .plan-row .grip { grid-area: h; }
+.plan-row:last-child { border-bottom: none; }
 .check-cell { grid-area: c; width: var(--col-check); height: var(--row-h); display: grid; place-items: center; }
 .time-cell { grid-area: t; height: var(--row-h); display: flex; align-items: center; justify-self: start; }
 .flag-btn { grid-area: p; justify-self: start; }
@@ -330,7 +338,7 @@ body.dragging .plans.is-empty::after { content: attr(data-empty-drag); }
 }
 
 /* ---------- add plan / add day ---------- */
-.add-plan-btn { margin-top: 0.4rem; background: none; border: none; color: var(--accent); font-family: inherit; font-size: 0.85rem; cursor: pointer; padding: 0.35rem 0; }
+.add-plan-btn { margin-top: 0.4rem; flex: 0 0 auto; align-self: flex-start; background: none; border: none; color: var(--accent); font-family: inherit; font-size: 0.85rem; cursor: pointer; padding: 0.35rem 0; }
 .add-plan-btn:hover { text-decoration: underline; }
 
 /* ---------- floating "add day" ---------- */
@@ -429,7 +437,7 @@ body.file-over .board { outline: 2px dashed var(--accent); outline-offset: -6px;
 
 /* ---------- phones ---------- */
 @media (max-width: 720px) {
-  :root { --col-w: 86vw; --col-w-collapsed: 40vw; }
+  :root { --col-w: 84vw; }
   .topbar { padding: 0.5rem 0.75rem; padding-top: calc(0.5rem + env(safe-area-inset-top, 0px)); }
   h1 { font-size: 1rem; }
   .trips-btn { max-width: 9rem; }
@@ -527,25 +535,6 @@ body.file-over .board { outline: 2px dashed var(--accent); outline-offset: -6px;
 .trip-title { font-size: 0.92rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trip-meta { font-size: 0.72rem; color: var(--ink-soft); }
 .trip-tools { display: flex; align-items: center; gap: 0.1rem; flex-shrink: 0; }
-
-/* ---------- collapse / expand ---------- */
-.rail-toggle {
-  background: none; border: none; cursor: pointer; padding: 0;
-  width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-}
-.rail-toggle:hover { background: var(--accent-soft); }
-.rail-toggle .dot { transition: transform 140ms ease; }
-.day.collapsed .rail-toggle .dot {
-  background: var(--paper-raised); box-shadow: inset 0 0 0 2px var(--accent); transform: scale(0.85);
-}
-.day-summary {
-  background: none; border: none; border-top: 1px dotted var(--line);
-  color: var(--ink-soft); font-family: inherit; font-size: 0.78rem; cursor: pointer;
-  padding: 0.5rem 0.1rem; text-align: left; width: 100%;
-}
-.day-summary:hover { color: var(--accent); }
-.day.collapsed .date-btn { font-size: 0.9rem; }
 
 /* ---------- calendar ---------- */
 .cal-month { flex: 0 0 auto; }
